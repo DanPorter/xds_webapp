@@ -58,6 +58,7 @@ interface FormErrors {
 interface plotSetter {
   plotSet1: React.Dispatch<React.SetStateAction<LinePlotProps>>;
   plotSet2: React.Dispatch<React.SetStateAction<LinePlotProps>>;
+  tableSet: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // interface lineData {
@@ -66,7 +67,7 @@ interface plotSetter {
 // }
 
 
-function SimulationInputs( { plotSet1, plotSet2 } : plotSetter ) {
+function SimulationInputs( { plotSet1, plotSet2, tableSet } : plotSetter ) {
   const [formData, setFormData] = useState<FormData>({
     ion: '',
     charge: '',
@@ -130,6 +131,7 @@ function SimulationInputs( { plotSet1, plotSet2 } : plotSetter ) {
       //   line.y = ndarray(new Float32Array(line.y as number[])) as NDT;
       // })
       // console.log('plot2 recast', data['plot2'])
+      tableSet(data['table'])
       plotSet1(data['plot1'])
       plotSet2(data['plot2'])
     } catch (error) {
