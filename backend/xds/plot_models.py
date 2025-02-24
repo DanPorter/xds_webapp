@@ -1,0 +1,124 @@
+"""
+Plot models for Davidia plotting
+
+https://github.com/DiamondLightSource/davidia/blob/main/client/component/src/LinePlot.tsx
+https://diamondlightsource.github.io/davidia/?path=/docs/plots-line--docs
+"""
+import numpy as np 
+from pydantic import BaseModel
+
+
+class GlyphType:
+    """
+    h5web line markers (glyphs)
+    https://github.com/silx-kit/h5web/blob/main/packages/lib/src/vis/line/models.ts
+    """
+    Circle = 'Circle'
+    Cross = 'Cross'
+    Square = 'Square'
+    Cap = 'Cap'
+
+
+class lineParams(BaseModel):
+    colour: str
+    pointSize: int
+    lineOn: bool
+    glyphType: str
+
+
+class lineData(BaseModel):
+    key: str
+    lineParams: lineParams
+    x: list 
+    xDomain: list[float, float]
+    y: list 
+    yDomain: list[float, float]
+    defaultIndices: bool
+
+
+class plotConfig(BaseModel):
+    title: str 
+    xLabel: str 
+    yLabel: str
+
+
+class lineProps(BaseModel):
+    plotConfig: plotConfig
+    lineData: tuple[lineData]
+    xDomain: tuple[float, float]
+    yDomain: tuple[float, float]
+
+
+def getGlyph(fmt: str):
+    if 'x' in fmt or '+' in fmt:
+        return GlyphType.Cross
+    if 'o' in fmt:
+        return GlyphType.Circle
+    if '^' in fmt:
+        return GlyphType.Cap
+    if 's' in fmt:
+        return GlyphType.Square
+    return None
+
+
+def gen_lineData(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str = '') -> lineData:
+    return {
+        'key': label,
+        'lineParams': {
+            # 'colour': fmt.strip('-x:.o;'),
+            'pointSize': 6,
+            'lineOn': True, #'-' in fmt or ':' in fmt,
+            # 'glyphType': getGlyph(fmt),  
+        },
+        'x': xdata.tolist(),
+        'xDomain': (xdata.min(), xdata.max()),
+        'y': ydata.tolist(),
+        'yDomain': (ydata.min(), ydata.max()),
+        'defaultIndices': False,
+    }
+
+
+def gen_lineProps(title: str, xlabel: str, ylabel: str, 
+                  xlim: tuple[float, float] | None, ylim: tuple[float, float] | None, 
+                  *lines: lineData) -> lineProps:
+    return {
+        'plotConfig': {
+            'title': title,
+            'xLabel': xlabel,
+            'yLabel': ylabel,
+        },
+        'lineData': lines,
+        'xDomain': xlim if xlim else (
+            min(line['xDomain'][0] for line in lines),
+            max(line['xDomain'][1] for line in lines),
+        ),
+        'yDomain': ylim if ylim else (
+            min(line['yDomain'][0] for line in lines),
+            max(line['yDomain'][1] for line in lines),
+        ),
+    }
+
+
+
+# lineProps = {
+#     'PlotConfig': {
+#         'title': str,
+#         'xLabel': str,
+#     },
+#     'lineData': [
+#         {
+#             'key': str,
+#             'lineParams': {
+#                 'colour': str,
+#                 'pointSize': int,
+#                 'lineOn': bool,
+#                 'glyphType': str,  
+#             },
+#             'x': list,
+#             'xDomain': (float, float),
+#             'y': list,
+#             'yDomain': (float, float),
+#             'defaultIndices': bool,
+#         }
+#     ]
+# }
