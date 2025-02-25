@@ -70,9 +70,9 @@ def gen_lineData(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str
             'lineOn': True, #'-' in fmt or ':' in fmt,
             # 'glyphType': getGlyph(fmt),  
         },
-        'x': xdata.tolist(),
+        'x': xdata,
         'xDomain': (xdata.min(), xdata.max()),
-        'y': ydata.tolist(),
+        'y': ydata,
         'yDomain': (ydata.min(), ydata.max()),
         'defaultIndices': False,
     }

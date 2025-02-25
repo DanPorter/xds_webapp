@@ -1,5 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
+import { FormErrors, tooltips } from './formParameters';
+import elementDescription from './elements';
 
 
 interface ElementData {
@@ -10,9 +12,10 @@ interface ElementData {
 
 interface SymSelectProps {
   formChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  errors: FormErrors;
 }
 
-const SymmetrySelector: React.FC<SymSelectProps> = ({ formChange }) => {
+const SymmetrySelector: React.FC<SymSelectProps> = ({ formChange, errors }) => {
   const [data, setData] = useState<ElementData>({});
   const [selectedElement, setSelectedElement] = useState<string>('');
   const [selectedCharge, setSelectedCharge] = useState<string>('');
@@ -62,19 +65,21 @@ const SymmetrySelector: React.FC<SymSelectProps> = ({ formChange }) => {
   return (
     <>
       <div className="form-group">
-        <label>Element:</label>
-        <select name="ion" value={selectedElement} onChange={handleElementChange}>
+        <label title={tooltips.ion}>Element:</label>
+        <select name="ion" title={tooltips.ion} value={selectedElement} onChange={handleElementChange}>
           <option value="">Select Element</option>
           {Object.keys(data).map((element) => (
-            <option key={element} value={element}>
+            <option key={element} title={elementDescription(element)} value={element}>
               {element}
             </option>
           ))}
         </select>
+        {errors.ion && <span className="error">{errors.ion}</span>}
       </div>
+
       <div className="form-group">
-        <label>Charge:</label>
-        <select name="charge" value={selectedCharge} onChange={handleChargeChange} disabled={!selectedElement}>
+        <label title={tooltips.charge}>Charge:</label>
+        <select name="charge" title={tooltips.charge} value={selectedCharge} onChange={handleChargeChange} disabled={!selectedElement}>
           <option value="">Select Charge</option>
           {charges.map((charge) => (
             <option key={charge} value={charge}>
@@ -82,17 +87,20 @@ const SymmetrySelector: React.FC<SymSelectProps> = ({ formChange }) => {
             </option>
           ))}
         </select>
+        {errors.charge && <span className="error">{errors.charge}</span>}
       </div>
+      
       <div className="form-group">
-        <label >Symmetry:</label>
-        <select name="symmetry" value={selectedSymmetry} disabled={!selectedCharge} onChange={handleSymmetryChange}>
+        <label title={tooltips.symmetry}>Symmetry:</label>
+        <select name="symmetry" title={tooltips.symmetry} value={selectedSymmetry} disabled={!selectedCharge} onChange={handleSymmetryChange}>
           <option value="">Select Symmetry</option>
           {symmetries.map((symmetry) => (
-            <option key={symmetry} value={symmetry}>
+            <option key={symmetry} title={tooltips[symmetry]} value={symmetry}>
               {symmetry}
             </option>
           ))}
         </select>
+        {errors.symmetry && <span className="error">{errors.symmetry}</span>}
       </div>
     </>
   );

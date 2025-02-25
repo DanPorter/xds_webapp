@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { LinePlotProps } from '@diamondlightsource/davidia';
+import MarkdownPreview from './MarkdownTextBox';
 
 import { DvDPlots, ExampleData } from './DavidiaPlots';
 import SimulationInputs from './sim/FormComponent';
@@ -21,7 +22,8 @@ function App() {
         {/* <DvDPlots xdata={xdata} ydata={ydata} xlabel='Energy [eV]' ylabel='Intensity' /> */}
         <DvDPlots {...plot1} />
         <DvDPlots {...plot2} />
-        <div dangerouslySetInnerHTML={{ __html: table }} />
+        {/* <div dangerouslySetInnerHTML={{ __html: table }} /> */}
+        <MarkdownPreview markdown={table}/>
       </div>
     </div>
   )

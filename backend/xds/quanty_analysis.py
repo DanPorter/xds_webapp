@@ -79,26 +79,44 @@ def process_results(ion: str, path: str, Nelec: float, edge: float, Rawout: subp
     Tz_t = float(outdic['T_k'])
     Seff_t = float(outdic['S_k']) + float(outdic['T_k'])
 
-    table1 = [[r'L$_z$', r'S$_{eff}$', r'S$_{z}$', r'T$_{z}$'],
-                [Lz_t, Seff_t, Sz_t, Tz_t]]
-    table2 = [[r'sL$_z$', 'sS$_{eff}$'], [lz, szef]]
-    table3 = [[r's$_0$L$_z$', 's$_0$S$_{eff}$'], [lz0, szef0]]
-    table4 = [[r'$\Delta$XAS (%)', r'$\Delta$L$_{z}$ (%)', r'$\Delta$S$_{eff}$ (%)',
-                r'$\Delta_0$L$_{z}$ (%)', r'$\Delta_0$S$_{eff}$ (%)'],
-                [deltaXas * 100, 100 * (abs(Lz_t) - abs(lz)) / Lz_t,
-                100 * (abs(Seff_t) - abs(szef)) / Seff_t,
-                100 * (abs(Lz_t) - abs(lz0)) / Lz_t,
-                100 * (abs(Seff_t) - abs(szef0)) / Seff_t]]
+    table1 = [
+        [r'L$$_z$$', r'S$_{eff}$', r'S$_{z}$', r'T$_{z}$'],
+        [Lz_t, Seff_t, Sz_t, Tz_t]
+    ]
+    table2 = [
+        [r'sL$_z$', 'sS$_{eff}$'], 
+        [lz, szef]
+    ]
+    table3 = [
+        [r's$_0$L$_z$', 's$_0$S$_{eff}$'], 
+        [lz0, szef0]
+    ]
+    table4 = [
+        [
+            r'$\Delta$XAS (%)', 
+            r'$\Delta$L$_{z}$ (%)', 
+            r'$\Delta$S$_{eff}$ (%)',
+            r'$\Delta_0$L$_{z}$ (%)',
+            r'$\Delta_0$S$_{eff}$ (%)'
+        ],
+        [
+            deltaXas * 100, 
+            100 * (abs(Lz_t) - abs(lz)) / Lz_t,
+            100 * (abs(Seff_t) - abs(szef)) / Seff_t,
+            100 * (abs(Lz_t) - abs(lz0)) / Lz_t,
+            100 * (abs(Seff_t) - abs(szef0)) / Seff_t
+        ]
+    ]
     
-    tfmt = 'html'
+    tfmt = 'github'
     table_string = '\n'.join([
-        "<h1>Theoretical values (Quanty)</h1>",
+        "## Theoretical values (Quanty)",
         tabulate(table1, headers='firstrow', tablefmt=tfmt),
-        "<h3>Sum rules :<\h3>",
+        "### Sum rules :",
         tabulate(table2, headers='firstrow', tablefmt=tfmt),
-        "<h3>Sum rules 0:<\h3>",
+        "### Sum rules 0:",
         tabulate(table3, headers='firstrow', tablefmt=tfmt),
-        "<h3>Deviations:<\h3>",
+        "### Deviations:",
         tabulate(table4, headers='firstrow', tablefmt=tfmt)
     ])
 

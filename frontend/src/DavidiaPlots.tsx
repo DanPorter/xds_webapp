@@ -1,13 +1,12 @@
 import ndarray from 'ndarray';
 import {
-    GlyphType,
-    NDT,
-    LineParams,
-    LineData,
-    LinePlotProps,
-    LinePlot,
-    // PlotConfig,
-  } from '@diamondlightsource/davidia';
+  GlyphType,
+  NDT,
+  LineParams,
+  LineData,
+  LinePlotProps,
+  LinePlot,
+} from '@diamondlightsource/davidia';
 
 
 export function ExampleData() {
@@ -40,17 +39,18 @@ export function ExampleData() {
   return lineProps
 }
 
-interface lineData {
-  x: number[] | NDT;
-  y: number[] | NDT;
-}
+// interface lineData {
+//   x: number[] | NDT;
+//   y: number[] | NDT;
+// }
   
 
 export function DvDPlots( lineProps: LinePlotProps ) {
-  lineProps.lineData.forEach((line: lineData) => {
-    line.x = ndarray(new Float32Array(line.x as number[])) as NDT;
-    line.y = ndarray(new Float32Array(line.y as number[])) as NDT;
-  })
+  console.log('lineProps:', lineProps)
+  // lineProps.lineData.forEach((line: lineData) => {
+  //   line.x = 'data' in line.x ? line.x as NDT : ndarray(new Float32Array(line.x as number[])) as NDT;
+  //   line.y = 'data' in line.y ? line.y as NDT : ndarray(new Float32Array(line.y as number[])) as NDT;
+  // })
   return (
     <>
       <LinePlot {...lineProps} updateSelection={null} />

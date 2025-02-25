@@ -1,6 +1,16 @@
 
 
-export interface Element {
+export default function elementDescription(symbol: string) {
+    const element = elements.find((element) => element.symbol === symbol);
+    if (element) {
+        return `${element.name} (${element.symbol}-${element.atomicNumber})`;
+    } else {
+        return 'Unknown';
+    }
+}
+
+
+interface Element {
     symbol: string;
     name: string;
     atomicNumber: number;
