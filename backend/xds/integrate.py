@@ -48,19 +48,18 @@ def romb(y, dx=1.0, axis=-1, show=False):
 
     Examples
     --------
-    >>> from scipy import integrate
     >>> import numpy as np
     >>> x = np.arange(10, 14.25, 0.25)
     >>> y = np.arange(3, 12)
 
-    >>> integrate.romb(y)
+    >>> romb(y)
     56.0
 
     >>> y = np.sin(np.power(x, 2.5))
-    >>> integrate.romb(y)
+    >>> romb(y)
     -0.742561336672229
 
-    >>> integrate.romb(y, show=True)
+    >>> romb(y, show=True)
     Richardson Extrapolation Table for Romberg Integration
     ======================================================
     -0.81576

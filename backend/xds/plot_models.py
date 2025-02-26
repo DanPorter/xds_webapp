@@ -4,7 +4,7 @@ Plot models for Davidia plotting
 https://github.com/DiamondLightSource/davidia/blob/main/client/component/src/LinePlot.tsx
 https://diamondlightsource.github.io/davidia/?path=/docs/plots-line--docs
 """
-import numpy as np 
+import numpy as np
 from pydantic import BaseModel
 
 
@@ -61,39 +61,34 @@ def getGlyph(fmt: str):
     return None
 
 
-def gen_lineData(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str = '') -> lineData:
-    return {
-        'key': label,
-        'lineParams': {
-            # 'colour': fmt.strip('-x:.o;'),
-            'pointSize': 6,
-            'lineOn': True, #'-' in fmt or ':' in fmt,
-            # 'glyphType': getGlyph(fmt),  
-        },
-        'x': xdata, 
-        'xDomain': (xdata.min(), xdata.max()),
-        'y': ydata, 
-        'yDomain': (ydata.min(), ydata.max()),
-        'defaultIndices': False,
-    }
+def gen_line_data(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str = '') -> lineData:
+    return lineData(
+        key=label,
+        lineParams=lineParams(
+            # colour=fmt.strip('-x:.o;'),
+            pointSize=6,
+            lineOn=True,  # '-' in fmt or ':' in fmt,
+            # glyphType=getGlyph(fmt),
+        )
+    )
 
 
-def gen_lineProps(title: str, xlabel: str, ylabel: str, 
-                  xlim: tuple[float, float] | None, ylim: tuple[float, float] | None, 
-                  *lines: lineData) -> lineProps:
-    return {
-        'plotConfig': {
-            'title': title,
-            'xLabel': xlabel,
-            'yLabel': ylabel,
-        },
-        'lineData': lines,
-        'xDomain': xlim if xlim else (
+def gen_plot_props(title: str, xlabel: str, ylabel: str,
+                   xlim: tuple[float, float] | None, ylim: tuple[float, float] | None,
+                   *lines: lineData) -> lineProps:
+    return lineProps(
+        plotConfig=plotConfig(
+            title=title,
+            xLabel=xlabel,
+            yLabel=ylabel,
+        ),
+        lineData=lines,
+        xDomain=xlim if xlim else (
             min(line['xDomain'][0] for line in lines),
             max(line['xDomain'][1] for line in lines),
         ),
-        'yDomain': ylim if ylim else (
+        yDomain=ylim if ylim else (
             min(line['yDomain'][0] for line in lines),
             max(line['yDomain'][1] for line in lines),
         ),
-    }
+    )
