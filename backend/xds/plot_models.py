@@ -70,9 +70,9 @@ def gen_lineData(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str
             'lineOn': True, #'-' in fmt or ':' in fmt,
             # 'glyphType': getGlyph(fmt),  
         },
-        'x': xdata,
+        'x': xdata, 
         'xDomain': (xdata.min(), xdata.max()),
-        'y': ydata,
+        'y': ydata, 
         'yDomain': (ydata.min(), ydata.max()),
         'defaultIndices': False,
     }
@@ -97,28 +97,3 @@ def gen_lineProps(title: str, xlabel: str, ylabel: str,
             max(line['yDomain'][1] for line in lines),
         ),
     }
-
-
-
-# lineProps = {
-#     'PlotConfig': {
-#         'title': str,
-#         'xLabel': str,
-#     },
-#     'lineData': [
-#         {
-#             'key': str,
-#             'lineParams': {
-#                 'colour': str,
-#                 'pointSize': int,
-#                 'lineOn': bool,
-#                 'glyphType': str,  
-#             },
-#             'x': list,
-#             'xDomain': (float, float),
-#             'y': list,
-#             'yDomain': (float, float),
-#             'defaultIndices': bool,
-#         }
-#     ]
-# }

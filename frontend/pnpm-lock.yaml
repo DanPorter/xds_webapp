@@ -14,6 +14,12 @@ importers:
       '@msgpack/msgpack':
         specifier: ^3.1.0
         version: 3.1.0
+      '@types/cwise':
+        specifier: ^1.0.6
+        version: 1.0.6
+      cwise:
+        specifier: ^1.0.10
+        version: 1.0.10
       katex:
         specifier: ^0.16.21
         version: 0.16.21
@@ -687,6 +693,15 @@ packages:
 
   '@types/babel__traverse@7.20.6':
     resolution: {integrity: sha512-r1bzfrm0tomOI8g1SzvCaQHo6Lcv6zu0EA+W2kHrt8dyrHQxGzBBL4kdkzIS+jBMV+EYcMAEAqXqYaLJq5rOZg==}
+
+  '@types/cwise-compiler@1.1.6':
+    resolution: {integrity: sha512-umbU4jHJd1J7rKd4NNt32LV6bnmFTfEadMTbePDtZPhWwKOywC/NnmjNS/kZ954H3VPCYJPNX0aeQ61m2TtiBg==}
+
+  '@types/cwise-parser@1.0.3':
+    resolution: {integrity: sha512-fNxPFVmoY+R9OyQ1+IwsW+EPu2RTY9add0Ux85npnJOPGVwcBXsFLMdxXFjxUKCDoMcKJe3mDZvvc2lv0dVNvA==}
+
+  '@types/cwise@1.0.6':
+    resolution: {integrity: sha512-brDk/D0AwpmfEJN2U9w3I8QrLLEAIn8OFVzYzb0Ko/P7apoHxusB7JkUXUBbno0GcB2Hv0NpFBKB0wB8lLUQcw==}
 
   '@types/d3-array@3.0.3':
     resolution: {integrity: sha512-Reoy+pKnvsksN0lQUlcH6dOGjRZ/3WRwXR//m+/8lt1BXeI4xyaUZoqULNjyXXRuh0Mj4LNpkCvhUpQlY3X5xQ==}
@@ -3234,6 +3249,18 @@ snapshots:
   '@types/babel__traverse@7.20.6':
     dependencies:
       '@babel/types': 7.26.9
+
+  '@types/cwise-compiler@1.1.6':
+    dependencies:
+      '@types/cwise-parser': 1.0.3
+      '@types/ndarray': 1.0.14
+
+  '@types/cwise-parser@1.0.3': {}
+
+  '@types/cwise@1.0.6':
+    dependencies:
+      '@types/cwise-compiler': 1.1.6
+      '@types/ndarray': 1.0.14
 
   '@types/d3-array@3.0.3': {}
 

@@ -73,6 +73,8 @@ class XAS_Lua:
                 'G1pd_f': 0.8,
                 'G3pd_f': 0.8
             }
+        else:
+            self.beta = beta
         self.result = None
 
     def write_header(self):
@@ -778,6 +780,19 @@ def gen_simulation(ion: str, ch_str: str, symmetry: str, beta: float, dq: float,
     #     message += ','.join(XRAY_DATA['elements'][ion]['charges'].keys())
     #     raise Exception(message)
 
+    beta_parameters = {
+        'F2dd_i': beta,
+        'F2dd_f': beta,
+        'F4dd_i': beta,
+        'F4dd_f': beta,
+        'zeta_3d': 1,
+        'Xzeta_3d': 1,
+        'zeta_2p': 1,
+        'F2pd_f': beta,
+        'G1pd_f': beta,
+        'G3pd_f': beta
+    }
+
     # build parameters
     calculation_parameters = {
         'Nelec': ATOMIC_PARAMETERS[ion]['Nelec'],
@@ -803,10 +818,11 @@ def gen_simulation(ion: str, ch_str: str, symmetry: str, beta: float, dq: float,
     }
     simulation = XAS_Lua(
         ion=ion,
-        symm='Oh',
+        symm=symmetry,
         charge=ch_str,
         params=calculation_parameters,
         output_path=TMPDIR,
         quanty_path=quanty_path,
+        beta=beta_parameters
     )
     return simulation

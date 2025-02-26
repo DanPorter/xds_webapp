@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel", "pytest"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xds_webapp"
+version = "0.1.0"
+dependencies = [
+  "fastapi[standard]",
+  "numpy",
+  "tabulate",
+  "msgpack",
+]
+requires-python = ">=3.10"
+authors = [
+  {name = "Dan Porter", email = "dan.porter@diamond.ac.uk"},
+]
+maintainers = [
+  {name = "Dan Porter", email = "dan.porter@diamond.ac.uk"},
+]
+description = "X-Ray Dichroism Simulations using Quanty"
+readme = "README.md"
+

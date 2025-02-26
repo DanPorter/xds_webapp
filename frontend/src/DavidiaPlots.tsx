@@ -8,6 +8,8 @@ import {
   LinePlot,
 } from '@diamondlightsource/davidia';
 
+// import { createLineData } from '/scratch/grp66007/web/davidia/client/component/src/utils'
+
 
 export function ExampleData() {
   const x = ndarray(new Float32Array([1, 2, 3, 4, 5])) as NDT;
@@ -43,7 +45,7 @@ export function ExampleData() {
 //   x: number[] | NDT;
 //   y: number[] | NDT;
 // }
-  
+
 
 export function DvDPlots( lineProps: LinePlotProps ) {
   console.log('lineProps:', lineProps)
@@ -51,6 +53,7 @@ export function DvDPlots( lineProps: LinePlotProps ) {
   //   line.x = 'data' in line.x ? line.x as NDT : ndarray(new Float32Array(line.x as number[])) as NDT;
   //   line.y = 'data' in line.y ? line.y as NDT : ndarray(new Float32Array(line.y as number[])) as NDT;
   // })
+  // console.log('updated lineProps:', lineProps)
   return (
     <>
       <LinePlot {...lineProps} updateSelection={null} />
