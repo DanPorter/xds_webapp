@@ -198,16 +198,18 @@ class XAS_Lua:
         Set the crystal field part of the Hamiltonian
         """
         Nelec = self.params['Nelec']
-        if str(int(self.charge[0]) - 2) != 0:
+        if str(int(self.charge[0]) - 2) != 0:  # TODO: comparison of str with int
             conf = '3d' + str(Nelec - int(self.charge[0]) + 2)
             conf_xas = '2p5,3d' + str(Nelec - int(self.charge[0]) + 2 + 1)
         else:
             conf = '3d' + str(Nelec)
             conf_xas = '2p5,3d' + str(Nelec + 1)
 
+        print(self.ion, self.charge, self.symm, conf, conf_xas)
+        
         tendq_i = \
             self.xdat['elements'][self.ion]['charges'][self.charge]['configurations'][conf]['terms']['Crystal Field'][
-                'symmetries'][self.symm]['parameters']['variable']['10Dq(3d)']
+                'symmetries'][self.symm]['parameters']['variable']['10Dq(3d)']  # '10Dq(3d)' only available in Oh symmetries
         tendq_f = \
             self.xdat['elements'][self.ion]['charges'][self.charge]['configurations'][conf_xas]['terms'][
                 'Crystal Field'][

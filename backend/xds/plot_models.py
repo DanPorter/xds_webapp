@@ -5,6 +5,7 @@ https://github.com/DiamondLightSource/davidia/blob/main/client/component/src/Lin
 https://diamondlightsource.github.io/davidia/?path=/docs/plots-line--docs
 """
 import numpy as np
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -20,10 +21,10 @@ class GlyphType:
 
 
 class lineParams(BaseModel):
-    colour: str
+    colour: Optional[str] = None
     pointSize: int
     lineOn: bool
-    glyphType: str
+    glyphType: Optional[str] = None
 
 
 class lineData(BaseModel):
@@ -62,33 +63,38 @@ def getGlyph(fmt: str):
 
 
 def gen_line_data(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str = '') -> lineData:
-    return lineData(
-        key=label,
-        lineParams=lineParams(
-            # colour=fmt.strip('-x:.o;'),
-            pointSize=6,
-            lineOn=True,  # '-' in fmt or ':' in fmt,
-            # glyphType=getGlyph(fmt),
-        )
-    )
+    return {
+        'key': label,
+        'lineParams': {
+            # 'colour': fmt.strip('-x:.o;'),
+            'pointSize': 6,
+            'lineOn': True, #'-' in fmt or ':' in fmt,
+            # 'glyphType': getGlyph(fmt),  
+        },
+        'x': xdata,
+        'xDomain': (xdata.min(), xdata.max()),
+        'y': ydata,
+        'yDomain': (ydata.min(), ydata.max()),
+        'defaultIndices': False,
+    }
 
 
-def gen_plot_props(title: str, xlabel: str, ylabel: str,
-                   xlim: tuple[float, float] | None, ylim: tuple[float, float] | None,
-                   *lines: lineData) -> lineProps:
-    return lineProps(
-        plotConfig=plotConfig(
-            title=title,
-            xLabel=xlabel,
-            yLabel=ylabel,
-        ),
-        lineData=lines,
-        xDomain=xlim if xlim else (
+def gen_plot_props(title: str, xlabel: str, ylabel: str, 
+                  xlim: tuple[float, float] | None, ylim: tuple[float, float] | None, 
+                  *lines: lineData) -> lineProps:
+    return {
+        'plotConfig': {
+            'title': title,
+            'xLabel': xlabel,
+            'yLabel': ylabel,
+        },
+        'lineData': lines,
+        'xDomain': xlim if xlim else (
             min(line['xDomain'][0] for line in lines),
             max(line['xDomain'][1] for line in lines),
         ),
-        yDomain=ylim if ylim else (
+        'yDomain': ylim if ylim else (
             min(line['yDomain'][0] for line in lines),
             max(line['yDomain'][1] for line in lines),
         ),
-    )
+    }
