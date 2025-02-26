@@ -135,6 +135,7 @@ async def submit_form(data: SimulationInputs):
         "plot1": axis1, 
         "plot2": axis2
     }
+    # return data
     packed_data = msgpack.packb(data, use_bin_type=True, default=encode_ndarray)
     return Response(content=packed_data, media_type="application/x-msgpack")
 

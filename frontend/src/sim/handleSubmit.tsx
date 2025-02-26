@@ -6,7 +6,7 @@ import { decode } from 'messagepack';
 // import { decode } from '@msgpack/msgpack';
 
 
-interface Data {
+interface SimulationData {
   message: string;
   table: string;
   plot1: LinePlotProps;
@@ -35,7 +35,7 @@ export const handleSubmit = async (
     });
     // const data = await response.json() as Data;
     const buffer = await response.arrayBuffer();
-    const data = await decode(new Uint8Array(buffer)) as Data;
+    const data = await decode(new Uint8Array(buffer)) as SimulationData;
     console.log('Response:', data);
     tableSet(data.table);
     plotSet1(data.plot1);
