@@ -15,7 +15,7 @@ interface SymSelectProps {
   errors: FormErrors;
 }
 
-const SymmetrySelector: React.FC<SymSelectProps> = ({ formChange, errors }) => {
+const OptionSelector: React.FC<SymSelectProps> = ({ formChange, errors }) => {
   const [data, setData] = useState<ElementData>({});
   const [selectedElement, setSelectedElement] = useState<string>('');
   const [selectedCharge, setSelectedCharge] = useState<string>('');
@@ -106,7 +106,7 @@ const SymmetrySelector: React.FC<SymSelectProps> = ({ formChange, errors }) => {
   );
 };
 
-export default SymmetrySelector;
+export default OptionSelector;
 
 
 // function SymmetrySelect({ value, description, onChange, error }: IonSelectProps) {

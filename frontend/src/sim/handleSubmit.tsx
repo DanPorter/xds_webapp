@@ -3,6 +3,7 @@ import { FormData, FormErrors } from './formParameters';
 import { validate } from './validateForm';
 
 import { decode } from 'messagepack';
+import { ExampleData } from '../DavidiaPlots';
 // import { decode } from '@msgpack/msgpack';
 
 
@@ -33,13 +34,18 @@ export const handleSubmit = async (
       },
       body: JSON.stringify(formData),
     });
-    // const data = await response.json() as Data;
-    const buffer = await response.arrayBuffer();
+    // const data = await response.json() as Data; // 404 kB
+    const buffer = await response.arrayBuffer(); // 187 kB - ~half size of using unseralized JSON
     const data = await decode(new Uint8Array(buffer)) as SimulationData;
-    console.log('Response:', data);
+    console.log('Response:', data.message);
     tableSet(data.table);
-    plotSet1(data.plot1);
-    plotSet2(data.plot2);
+    if ('lineData' in data.plot1) {
+      plotSet1(data.plot1);
+      plotSet2(data.plot2);
+    } else {
+      plotSet1(ExampleData());
+      plotSet2(ExampleData());
+    }
   } catch (error) {
     console.error('Error:', error);
   }

@@ -10,8 +10,8 @@ from pydantic import BaseModel
 import msgpack
 import numpy as np
 
-
-from xds import gen_simulation, AVAILABLE_SYMMETRIES, lineProps
+from xds import gen_simulation, AVAILABLE_SYMMETRIES
+from xds.environment import AVAILABLE_EXPIDS, get_scan_files, get_beamline
 
 
 app = FastAPI()
@@ -54,6 +54,22 @@ async def get_element():
     return AVAILABLE_SYMMETRIES
 
 
+@app.get("/api/config")
+async def get_element():
+    return {
+        'beamline': get_beamline(),
+        'visits': AVAILABLE_EXPIDS
+    }
+
+
+class DataPath(BaseModel):
+    path: str
+
+@app.get("/api/scan_files")
+async def scan_files(data: DataPath):
+    return get_scan_files(data.path)
+
+
 def encoder(obj) -> dict[str, Any]:
     if isinstance(obj, np.ndarray):
         logger.info(f"Encoding numpy array: {obj.dtype} {obj.dtype.kind} {obj.size} {obj}")
@@ -69,28 +85,37 @@ def encoder(obj) -> dict[str, Any]:
 async def submit_form(data: SimulationInputs):
     # Run Quanty
     logger.info('Now I run Quanty with the following parameters:\n', data)
-    simulation = gen_simulation(
-        ion=data.ion,
-        ch_str=data.charge,
-        symmetry=data.symmetry,
-        beta=data.beta,
-        dq=data.tenDq,
-        mag_field=[data.bFieldX, data.bFieldY, data.bFieldZ],
-        exchange_field=[data.hFieldX, data.hFieldY, data.hFieldZ],
-        temperature=data.temperature,
-        quanty_path=data.path,
-    )
-    logger.info(f"Running Quanty simulation: {simulation.label}")
-    result = simulation.run_all()
-    logger.debug(f"Simulation output: {result.stdout if result else 'None'}")
-    logger.info(f"Analysing results of simulation: {simulation.label}")
-    table, axis1, axis2 = simulation.analyse()
-    data = {
-        "message": f"simulation {simulation.label} succsefull", 
-        "table": table, 
-        "plot1": axis1, 
-        "plot2": axis2
-    }
+    try:
+        simulation = gen_simulation(
+            ion=data.ion,
+            ch_str=data.charge,
+            symmetry=data.symmetry,
+            beta=data.beta,
+            dq=data.tenDq,
+            mag_field=[data.bFieldX, data.bFieldY, data.bFieldZ],
+            exchange_field=[data.hFieldX, data.hFieldY, data.hFieldZ],
+            temperature=data.temperature,
+            quanty_path=data.path,
+        )
+        logger.info(f"Running Quanty simulation: {simulation.label}")
+        result = simulation.run_all()
+        logger.debug(f"Simulation output: {result.stdout if result else 'None'}")
+        logger.info(f"Analysing results of simulation: {simulation.label}")
+        table, axis1, axis2 = simulation.analyse()
+        data = {
+            "message": f"simulation {simulation.label} succsefull", 
+            "table": table, 
+            "plot1": axis1, 
+            "plot2": axis2
+        }
+    except Exception as e:
+        logger.error(f"Error running simulation: {e}")
+        data = {
+            "message": f"Error running simulation: {e}",
+            "table": f"Error running simulation: {e}",
+            "plot1": {}, 
+            "plot2": {},
+        }
     packed_data = msgpack.packb(data, use_bin_type=True, default=encoder)
     return Response(content=packed_data, media_type="application/x-msgpack")
 

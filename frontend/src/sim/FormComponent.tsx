@@ -3,7 +3,7 @@ import { LinePlotProps } from '@diamondlightsource/davidia';
 
 import './FormComponent.css';
 import { defaults, FormErrors, FormData } from './formParameters';
-import SymmetrySelector from './symmetry_selector';
+import OptionSelector from './optionSelector';
 import TextInput from './TextInput';
 import NumericInput from './NumericInput';
 import VectorInput from './VectorInput';
@@ -34,7 +34,7 @@ function SimulationInputs( { plotSet1, plotSet2, tableSet } : plotSetter ) {
   return (
     <form className="form-container" onSubmit={(e) => handleSubmit(e, formData, tableSet, plotSet1, plotSet2, setErrors)}>
       <h2>Quanty Simulation</h2>
-      <SymmetrySelector formChange={handleChange} errors={errors}/>
+      <OptionSelector formChange={handleChange} errors={errors}/>
       <NumericInput name="beta" label="Beta" value={formData.beta} onChange={handleChange} error={errors.beta} />
       <NumericInput name="tenDq" label="10Dq" value={formData.tenDq} onChange={handleChange} error={errors.tenDq} />
       <VectorInput name="bField" label="Magnetic Field [T]" value={[formData.bFieldX, formData.bFieldY, formData.bFieldZ]} onChange={handleChange} error={errors.bField} />

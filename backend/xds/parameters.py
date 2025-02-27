@@ -11,11 +11,11 @@ PARAMETERS_FILE = os.path.dirname(__file__) + '/xray_parameters.json'
 with open(PARAMETERS_FILE, 'r', encoding='utf-8') as f:
     XRAY_DATA = json.load(f)
 
-AVAILABLE_SYMMETRIES = {
-    el: {
-        ch: list(charge['symmetries'].keys()) for ch, charge in element['charges'].items()
-    } for el, element in XRAY_DATA['elements'].items()
-}
+# AVAILABLE_SYMMETRIES = {
+#     el: {
+#         ch: list(charge['symmetries'].keys()) for ch, charge in element['charges'].items()
+#     } for el, element in XRAY_DATA['elements'].items()
+# }
 
 # Atomic parameters
 ATOMIC_PARAMETERS = {
@@ -136,4 +136,12 @@ ATOMIC_PARAMETERS = {
         "XF2dd": 8.530,
         "XF4dd": 5.321
     }
+}
+
+
+# Determine which symmetries are available for each element and charge
+AVAILABLE_SYMMETRIES = {
+    el: {
+        ch: list(charge['symmetries'].keys()) for ch, charge in XRAY_DATA['elements'][el]['charges'].items()
+    } for el in ATOMIC_PARAMETERS
 }
