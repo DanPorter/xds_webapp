@@ -24,7 +24,7 @@ function MeasurementInputs() {
 
   return (
     <form className="form-container" onSubmit={(e) => handleSubmit(e, formData)}>
-      <h2>Quanty Simulation</h2>
+      <h2>Experiment Data</h2>
       <DataPathSelector formChange={handleChange}/>
       <button type="submit" className="submit-button">Submit</button>
     </form>

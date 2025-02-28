@@ -32,13 +32,6 @@ function App() {
 
       <TabPanel>
         <div>
-          {/* Add your other options content here */}
-          <h2>Other Options</h2>
-          <p>Content for other options goes here.</p>
-          {/* <HoverPanel options={['Option 1', 'Option 2', 'Option 3']} onSelect={(option) => console.log(option)} />
-          <NumberSelector numbers={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]} />
-          <NumberRangeSelector min={31280} max={32300} onSelect={handleNumberSelect} /> */}
-          {/* {selectedNumbers.length > 0 && <p>Selected Numbers: {selectedNumbers.join(', ')}</p>} */}
           <MeasurementInputs />
         </div>
       </TabPanel>

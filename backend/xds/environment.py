@@ -16,12 +16,13 @@ MMG_BEAMLINES = ['i06', 'i06-1', 'i06-2', 'i10', 'i10-1', 'i16', 'i21']
 # Initialise available beamlines
 YEAR = str(datetime.now().year)
 AVAILABLE_EXPIDS = {
-    beamline: sorted(
+    beamline: {
+        os.path.basename(path): path for path in sorted(
             (file.path for file in os.scandir(os.path.join(DLS, beamline, 'data', YEAR)) 
              if file.is_dir() and os.access(file.path, os.R_OK)),
             key=lambda x: os.path.getmtime(x)
         )
-        for beamline in MMG_BEAMLINES
+    } for beamline in MMG_BEAMLINES
 } if os.path.isdir(DLS) else {}
 
 
@@ -76,6 +77,25 @@ def get_scan_files(folder_directory: str) -> dict[int, str]:
         int(number[0]): path for path in filepaths 
         if (number := re_num.search(os.path.basename(path))) is not None
     }
+
+
+def get_path_filespec(folder_directory: str) -> dict:
+    """Return dictionary of firts, last scan numbers and path spec"""
+    filepaths = list_files(folder_directory)
+    re_num = re.compile(r'\d{4,}')
+
+    def scan_number(filename):
+        match = re_num.search(filename)
+        if match and match[0].isnumeric():
+            return int(match[0])
+    first_file = next((file for file in filepaths if (number := scan_number(os.path.basename(file)))), 0)
+    first_number = scan_number(os.path.basename(first_file))
+    last_number = next((number for file in reversed(filepaths) if (number := scan_number(os.path.basename(file)))), 1)
+    file_spec = os.path.join(
+        os.path.dirname(first_file),
+        re_num.sub(os.path.basename(first_file), '{number}')
+    )
+    return dict(first_number=first_number, last_number=last_number, file_spec=file_spec)
 
 
 def run_command(command):

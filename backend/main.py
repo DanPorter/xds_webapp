@@ -11,7 +11,7 @@ import msgpack
 import numpy as np
 
 from xds import gen_simulation, AVAILABLE_SYMMETRIES
-from xds.environment import AVAILABLE_EXPIDS, get_scan_files, get_beamline
+from xds.environment import AVAILABLE_EXPIDS, get_path_filespec, get_beamline
 
 
 app = FastAPI()
@@ -65,9 +65,11 @@ async def get_element():
 class DataPath(BaseModel):
     path: str
 
-@app.get("/api/scan_files")
+
+@app.post("/api/scanfiles")
 async def scan_files(data: DataPath):
-    return get_scan_files(data.path)
+    print('scanfiles: ', data)
+    return get_path_filespec(data.path)
 
 
 def encoder(obj) -> dict[str, Any]:

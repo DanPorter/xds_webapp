@@ -1,8 +1,8 @@
 
 
-var QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe';//'Quanty';
+const QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe';//'Quanty';
 
-export var tooltips: {[id: string]: string} = {
+export const tooltips: {[id: string]: string} = {
     ion: 'Atomic element',
     charge: 'ionic charge (integer)',
     symmetry: 'site symmetry',
@@ -35,7 +35,7 @@ export interface FormData {
   path: string;
 }
 
-export var defaults: FormData = {
+export const defaults: FormData = {
   ion: '',
   charge: '',
   symmetry: '',
