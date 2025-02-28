@@ -1,0 +1,49 @@
+.hover-panel-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .hover-panel-toggle {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .hover-panel-toggle:hover {
+    background-color: #0056b3;
+  }
+  
+  .hover-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 10px;
+  }
+  
+  .hover-panel-option {
+    padding: 10px 20px;
+    border: none;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .hover-panel-option:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .hover-panel-option:not(:last-child) {
+    border-bottom: 1px solid #ddd;
+  }

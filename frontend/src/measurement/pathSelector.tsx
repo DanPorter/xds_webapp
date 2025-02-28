@@ -23,6 +23,8 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
   const [selectedInstrument, setSelectedInstrument] = useState<string>('');
   const [selectedVisit, setSelectedVisit] = useState<string>('');
   const [visitPath, setVisitPath] = useState<string>('');
+  const [instruments, setInstruments] = useState<string[]>([]);
+  const [visits, setVisits] = useState<string[]>([]);
 
   // load local atom data parameters
   useEffect(() => {
@@ -31,13 +33,15 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
         const response = await fetch('/api/config');
         const result = await response.json();
         setData(result);
-        if (result.beamline) {
-          setSelectedInstrument(result.beamline);
-        }
         if (Object.keys(result.visits).length > 0) {
-          const visit = result.visits[Object.keys(result.visits)[0]];
-          setSelectedVisit(visit);
-          setVisitPath(result.visits[visit]);
+          setInstruments(Object.keys(result.visits || {}));
+        }
+        if (result.beamline && result.beamline in result.visits) {
+          console.log('setting beamline to ', result.beamline);
+          setSelectedInstrument(result.beamline);
+          setVisits(Object.keys(result.visits[result.beamline] || {}));
+          setSelectedVisit(Object.keys(result.visits[result.beamline] || {})[0]);
+          setVisitPath(result.visits[result.beamline][Object.keys(result.visits[result.beamline] || {})[0]]);
         }
       } catch (error) {
         console.error('Error fetching instrument config data:', error);
@@ -46,11 +50,15 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
 
     fetchData();
   }, []);
+  console.log('local Beamline Config data: ', data);
 
   const handleInstrumentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const instrument = event.target.value;
     setSelectedInstrument(instrument);
-    setSelectedVisit('');
+    if (data.visits && instrument in data.visits) {
+      setVisits(Object.keys(data.visits[instrument] || {}));
+      setSelectedVisit('');
+    }
     formChange(event);
   };
 
@@ -70,12 +78,12 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
 
   return (
     <>
-      { data.visits &&
+      { instruments.length > 0 &&  // only display if on /dls file system
         <div className="form-group">
           <label title='Select Instrument'>Instrument:</label>
           <select name="ion" title='Select Instrument' value={selectedInstrument} onChange={handleInstrumentChange}>
             <option value="">Select Instrument</option>
-            {Object.keys(data).map((instrument) => (
+            {Object.keys(instruments).map((instrument) => (
               <option key={instrument} value={instrument}>
                 {instrument}
               </option>
@@ -84,12 +92,12 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
           {/* {errors.ion && <span className="error">{errors.ion}</span>} */}
         </div>
       }
-      { data.visits &&
+      { instruments.length > 0 &&
         <div className="form-group">
           <label title='Select Visit'>Visit:</label>
           <select name="visit" title='Select Visit' value={selectedVisit} onChange={handleVisitChange} disabled={!selectedInstrument}>
             <option value="">Select Charge</option>
-            {Object.keys(data.visits).map((visit) => (
+            {Object.keys(visits).map((visit) => (
               <option key={visit} value={visit}>
                 {visit}
               </option>

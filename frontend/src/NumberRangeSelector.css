@@ -1,0 +1,68 @@
+.number-range-selector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .number-inputs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .number-inputs input {
+    padding: 10px;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    width: 100px;
+  }
+  
+  .number-inputs button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .number-inputs button:hover {
+    background-color: #0056b3;
+  }
+  
+  .selected-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .selected-number-button {
+    padding: 10px 20px;
+    border: 2px solid #dc3545;
+    border-radius: 5px;
+    background-color: #fff;
+    color: #dc3545;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  .selected-number-button:hover {
+    background-color: #dc3545;
+    color: #fff;
+  }
+  
+  .submit-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #28a745;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .submit-button:hover {
+    background-color: #218838;
+  }

@@ -10,7 +10,7 @@ import SimulationInputs from './sim/FormComponent';
 // import NumberSelector from './NumberSelector';
 // import HoverPanel from './HoverPanel';
 // import NumberRangeSelector from './NumberRangeSelector';
-import DataPathSelector from './measurement/pathSelector';
+import MeasurementInputs from './measurement/FormComponent';
 
 
 function App() {
@@ -23,8 +23,6 @@ function App() {
   //   setSelectedNumbers(numbers);
   //   console.log('Selected numbers:', numbers);
   // };
-  const [formData, setFormData] = useState<FormData>({} as FormData);
-  console.log(formData);
   return (
     <Tabs>
       <TabList>
@@ -41,7 +39,7 @@ function App() {
           <NumberSelector numbers={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]} />
           <NumberRangeSelector min={31280} max={32300} onSelect={handleNumberSelect} /> */}
           {/* {selectedNumbers.length > 0 && <p>Selected Numbers: {selectedNumbers.join(', ')}</p>} */}
-          <DataPathSelector formChange={setFormData}/>
+          <MeasurementInputs />
         </div>
       </TabPanel>
 
