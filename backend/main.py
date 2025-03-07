@@ -3,18 +3,38 @@ import logging
 from typing import Any
 
 from fastapi import FastAPI
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import msgpack
 import numpy as np
 
+import secrets
+from subprocess import Popen
+from contextlib import asynccontextmanager
+import nest_asyncio
+import requests
+
 from xds import gen_simulation, AVAILABLE_SYMMETRIES
 from xds.environment import AVAILABLE_EXPIDS, get_path_filespec, get_beamline
+from xds.xas_analysis import find_pairs
 
 
-app = FastAPI()
+# Generate a secure token
+jupyter_token = secrets.token_hex(32)
+
+# Start Jupyter Notebook server
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup event
+    Popen(["jupyter", "notebook", "--no-browser", "--allow-root", f"--NotebookApp.token={jupyter_token}"])
+    yield
+    # Shutdown event (if needed)
+
+app = FastAPI(lifespan=lifespan)
+
+# app = FastAPI()
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -31,6 +51,22 @@ app.add_middleware(
 
 # def serialise(obj: dict):
 #     return orjson.dumps(obj, default=None, option=orjson.OPT_SERIALIZE_NUMPY)
+
+@app.post("/start-notebook/")  # THIS DOESN'T CURRENTLY WORK
+async def start_notebook():
+    # Create a new Jupyter session
+    response = requests.post('http://localhost:8888/api/sessions', json={
+        'name': '',
+        'path': 'notebook.ipynb',  # notebook.ipynb in the current directory (as main.py)
+        'type': 'notebook',
+        'kernel': {
+            'name': 'python3'
+        }
+    })
+    session = response.json()
+    logger.info('Jupyter session:', session)
+    notebook_url = f"http://localhost:8888/notebooks/{session['path']}?token={jupyter_token}"
+    return JSONResponse(content={"notebook_url": notebook_url})
 
 
 class SimulationInputs(BaseModel):
@@ -68,18 +104,22 @@ class DataPath(BaseModel):
 
 @app.post("/api/scanfiles")
 async def scan_files(data: DataPath):
-    print('scanfiles: ', data)
-    return get_path_filespec(data.path)
+    if not os.path.isdir(data.path):
+        logger.info('Path does not exist:', data.path)
+        return {}
+    filespec = get_path_filespec(data.path)
+    logger.info(f"files in {data.path}: {filespec}")
+    return filespec
 
 
 def encoder(obj) -> dict[str, Any]:
     if isinstance(obj, np.ndarray):
-        logger.info(f"Encoding numpy array: {obj.dtype} {obj.dtype.kind} {obj.size} {obj}")
+        logger.info(f"Encoding numpy array: {obj.dtype} {obj.dtype.kind} {obj.size} {obj.shape}")
         # Create javascript NDarray like object
         obj = dict(
             nd=True, dtype=obj.dtype.str, shape=obj.shape, data=obj.data.tolist()
         )
-        logger.info(f"Encoded numpy array: {obj}")
+        # logger.info(f"Encoded numpy array: {obj}")
     return obj
 
 
@@ -122,6 +162,18 @@ async def submit_form(data: SimulationInputs):
     return Response(content=packed_data, media_type="application/x-msgpack")
 
 
+class DataFiles(BaseModel):
+    files: list[str]
+
+@app.post("/api/pol_pairs")
+async def get_pairs(data: DataFiles):
+    logger.info(f"Finding pairs in files: \n{'\n'.join(data.files)}")
+    data = find_pairs(*data.files)
+    logger.info(f"Found {len(data)} pairs")
+    packed_data = msgpack.packb(data, use_bin_type=True, default=encoder)
+    return Response(content=packed_data, media_type="application/x-msgpack")
+
+
 INDEX = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist'))
 logger.info(f'!!! Frontend: {INDEX}, isfile: {os.path.isfile(INDEX)}')
 app.mount('/', StaticFiles(directory=INDEX, html=True), 'frontend')
@@ -130,6 +182,7 @@ app.mount('/', StaticFiles(directory=INDEX, html=True), 'frontend')
 if __name__ == "__main__":
     import uvicorn
     import webbrowser
+    nest_asyncio.apply()
 
     webbrowser.open_new_tab('http://localhost:8123/')
     # uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info", access_log=False, reload=True)

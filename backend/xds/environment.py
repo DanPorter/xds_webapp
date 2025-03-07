@@ -13,6 +13,9 @@ USER = ['USER', 'USERNAME']
 DLS = '/dls'
 MMG_BEAMLINES = ['i06', 'i06-1', 'i06-2', 'i10', 'i10-1', 'i16', 'i21']
 
+regex_scan_number = re.compile(r'\d{3,}')
+
+
 # Initialise available beamlines
 YEAR = str(datetime.now().year)
 AVAILABLE_EXPIDS = {
@@ -63,38 +66,34 @@ def list_files(folder_directory: str, extension='.nxs') -> list[str]:
 
 def list_scan_numbers(*paths) -> list[int]:
     """Return list of scan numbers in directory"""
-    re_num = re.compile(r'\d{4,}')
     return sorted(
-        (int(number[0]) for file in paths if (number := re_num.search(os.path.basename(file))) is not None),
+        (int(number[0]) for file in paths if (number := regex_scan_number.search(os.path.basename(file))) is not None),
     )
 
 
 def get_scan_files(folder_directory: str) -> dict[int, str]:
     """Return dictionary of scan numbers and file paths"""
     filepaths = list_files(folder_directory)
-    re_num = re.compile(r'\d{4,}')
     return {
         int(number[0]): path for path in filepaths 
-        if (number := re_num.search(os.path.basename(path))) is not None
+        if (number := regex_scan_number.search(os.path.basename(path))) is not None
     }
 
 
 def get_path_filespec(folder_directory: str) -> dict:
     """Return dictionary of firts, last scan numbers and path spec"""
     filepaths = list_files(folder_directory)
-    re_num = re.compile(r'\d{4,}')
 
     def scan_number(filename):
-        match = re_num.search(filename)
+        match = regex_scan_number.search(filename)
         if match and match[0].isnumeric():
             return int(match[0])
-    first_file = next((file for file in filepaths if (number := scan_number(os.path.basename(file)))), 0)
+        return 0
+    
+    first_file = next((file for file in filepaths if (number := scan_number(os.path.basename(file)))), '')
     first_number = scan_number(os.path.basename(first_file))
     last_number = next((number for file in reversed(filepaths) if (number := scan_number(os.path.basename(file)))), 1)
-    file_spec = os.path.join(
-        os.path.dirname(first_file),
-        re_num.sub(os.path.basename(first_file), '{number}')
-    )
+    file_spec = regex_scan_number.sub('{number}', os.path.basename(first_file))
     return dict(first_number=first_number, last_number=last_number, file_spec=file_spec)
 
 

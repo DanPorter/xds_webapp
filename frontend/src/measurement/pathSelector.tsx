@@ -1,67 +1,142 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
+
+import { BeamlineConfig, ScanFiles, fetchInstrumentVisits, fetchScanFiles } from './getData';
+import { MeasurementForm } from './FormComponent';
 import NumberRangeSelector from './NumberRangeSelector';
 
 
-interface BeamlineConfig {
-  beamline?: string;
-  visits?: {
-    // beamline
-    [key: string]: {
-      // visitID: path
-      [key: string]: string;
-    };
-  };
-};
-
-interface ScanFiles {
-  first_number: number;
-  last_number: number;
-  file_spec: string;
+interface DataPathSelectorProps {
+  formData: MeasurementForm;
+  setFormData: React.Dispatch<React.SetStateAction<MeasurementForm>>;
 }
 
-interface PathSelectProps {
-  formChange: (e: React.ChangeEvent<HTMLSelectElement> | React.ChangeEvent<HTMLInputElement>) => void;
-  // errors: FormErrors;
-}
-
-const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
-  const [data, setData] = useState<BeamlineConfig>({});
+const DataPathSelector: React.FC<DataPathSelectorProps> = ({ formData, setFormData }) => {
+  const [data, setData] = useState<BeamlineConfig>({ visits: {}, beamline: '' });
   const [selectedInstrument, setSelectedInstrument] = useState<string>('');
   const [selectedVisit, setSelectedVisit] = useState<string>('');
-  const [visitPath, setVisitPath] = useState<string>('');
+  // const [visitPath, setVisitPath] = useState<string>('');
   const [instruments, setInstruments] = useState<string[]>([]);
   const [visits, setVisits] = useState<string[]>([]);
-  const [firstNumber, setFirstNumber] = useState<number | null>(null);
-  const [lastNumber, setlastNumber] = useState<number | null>(null);
-  const [fileSpec, setFileSpec] = useState<string>('');
-  const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
+
+  const visitPath = formData.filePath
+  const setVisitPath = (path: string) => setFormData({...formData, filePath: path})
 
   // load local atom data parameters
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await fetch('/api/config');
-        const result = await response.json();
-        setData(result);
-        if (Object.keys(result.visits).length > 0) {
-          console.log('beamlines: ', Object.keys(result.visits))
-          setInstruments(Object.keys(result.visits));
-        }
-        if (result.beamline && result.beamline in result.visits) {
-          console.log('setting beamline to ', result.beamline);
-          setSelectedInstrument(result.beamline);
-          setVisits(Object.keys(result.visits[result.beamline]));
-          setSelectedVisit(Object.keys(result.visits[result.beamline])[0]);
-          setVisitPath(result.visits[result.beamline][Object.keys(result.visits[result.beamline])[0]]);
-        }
-      } catch (error) {
-        console.error('Error fetching instrument config data:', error);
+      const result: BeamlineConfig = await fetchInstrumentVisits();
+      setData(result);
+      if (Object.keys(result.visits).length > 0) {
+        console.log('beamlines: ', Object.keys(result.visits))
+        setInstruments(Object.keys(result.visits));
+      }
+      if (result.beamline && result.beamline in result.visits) {
+        console.log('setting beamline to ', result.beamline);
+        setSelectedInstrument(result.beamline);
+        setVisits(Object.keys(result.visits[result.beamline]));
+        setSelectedVisit(Object.keys(result.visits[result.beamline])[0]);
+      }
+      if (result.beamline && result.beamline in result.visits) {
+        console.log('setting beamline to ', result.beamline);
+        setSelectedInstrument(result.beamline);
+        setVisits(Object.keys(result.visits[result.beamline]));
+        setSelectedVisit(Object.keys(result.visits[result.beamline])[0]);
+        setVisitPath(result.visits[result.beamline][Object.keys(result.visits[result.beamline])[0]]);
       }
     };
-
-    fetchData();
+    fetchData()
+      .catch(console.error);;
   }, []);
+
+  // load files from visit path on visitPath change
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!visitPath) return;
+      console.log('fetching scan files from ', visitPath)
+      const result: ScanFiles = await fetchScanFiles(visitPath);
+      console.log('result: ', result)
+      if (result.first_number) {
+        setFormData({
+          ...formData, 
+          fileSpec: result.file_spec,
+          rangeStart: result.first_number,
+          rangeEnd: result.last_number
+        });
+      }
+    };
+    fetchData()
+      .catch(console.error);;
+  }, [visitPath]);
+
+  // client side directory selector
+
+  const handleDirectorySelect = async () => {
+    try {
+      const directoryHandle = await window.showDirectoryPicker();
+      const fileNames = [];
+      console.log('directoryHandle: ', directoryHandle);
+      setVisitPath(directoryHandle.name);
+      for await (const entry of directoryHandle.values()) {
+        if (entry.kind === 'file' && entry.name.endsWith('.nxs')) {
+          fileNames.push(await entry.getFile());
+        }
+      }
+      console.log('filenames found:', fileNames)
+      extractNumbers(fileNames);
+    } catch (error) {
+      console.error('Error selecting directory:', error);
+    }
+  };
+
+  // client side file selector
+
+  const handleFileSelect = async () => {
+    const pickerOpts = {
+      types: [{
+        description: "Nexus Files",
+        accept: {
+          "nxs/*": [".nxs"],
+        },
+      }],
+      excludeAcceptAllOption: true,
+      multiple: true,
+    } as OpenFilePickerOptions;
+    try {
+      const fileHandles = await window.showOpenFilePicker(pickerOpts);
+      const fileNames = [];
+      console.log('fileHandles: ', fileHandles);
+      for await (const entry of fileHandles.values()) {
+        if (entry.kind === 'file' && entry.name.endsWith('.nxs')) {
+            const file = await entry.getFile();
+            fileNames.push(file);
+            console.log('Full file path: ', entry.name);  // not the full file path!
+        }
+      }
+      extractNumbers(fileNames, true);
+    } catch (error) {
+      console.error('Error selecting files:', error);
+    }
+  };
+
+  const extractNumbers = (files: File[], select: boolean = false) => {
+    const numberPattern = /\d{3,}/g;
+    const extractedNumbers = files.flatMap(file => {
+      const matches = file.name.match(numberPattern);
+      return matches && ! isNaN(Number(matches)) ? Number(matches) : [];
+    });
+    console.log('Extracted numbers from files: ', extractedNumbers)
+    setFormData({
+      ...formData, 
+      fileSpec: files[0].name.replace(numberPattern, '{number}'),
+      rangeStart: Math.min(...extractedNumbers),
+      rangeEnd: Math.max(...extractedNumbers),
+      selectedNumbers: select ? extractedNumbers : []
+    });
+  };
+
+
+  // dropdown onChange handlers
 
   const handleInstrumentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const instrument = event.target.value;
@@ -70,7 +145,6 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
       setVisits(Object.keys(data.visits[instrument]));
       setSelectedVisit('');
     }
-    formChange(event);
   };
 
   const handleVisitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -79,34 +153,10 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
     if (data.visits) {
       setVisitPath(data.visits[selectedInstrument][visit]);
     }
-    formChange(event);
   };
 
   const handlePathChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setVisitPath(event.target.value);
-    formChange(event);
-    fetchScanFiles();
-    console.log('fileSpec: ', fileSpec)
-  };
-
-  const fetchScanFiles = async () => {
-    try {
-      console.log('Fetching scan files from ', visitPath)
-      const response = await fetch('http://localhost:8123/api/scanfiles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({'path': visitPath}),
-      });
-      const result = await response.json() as ScanFiles;
-      console.log('scan files: ', result)
-      setFirstNumber(result.first_number)
-      setlastNumber(result.last_number)
-      setFileSpec(result.file_spec)
-    } catch (error) {
-      console.error('Error fetching instrument config data:', error);
-    }
   };
 
   return (
@@ -141,23 +191,33 @@ const DataPathSelector: React.FC<PathSelectProps> = ({ formChange }) => {
       }
       <div className="form-group">
         <label title='Path'>Path:</label>
-        <input
-          type="text"
-          name="path"
-          value={visitPath}
-          onChange={handlePathChange}
-          title='file path of data files'
-        />
+        <span>
+          <input
+            type="text"
+            name="path"
+            value={visitPath}
+            onChange={handlePathChange}
+            title='file path of data files'
+          />
+          <button onClick={handleDirectorySelect}>Select Directory</button>
+          <button onClick={handleFileSelect}>Select Files</button>
+          {/* <input type="file" id="fileElem" multiple /> */}
+        </span>
+        
+        <span>
+          <label title='File Spec'>File Spec:</label>
+          <input
+            type="text"
+            name="fileSpec"
+            value={formData.fileSpec}
+            title='file name pattern with {number} as placeholder'
+            onChange={(e) => setFormData({...formData, fileSpec: e.target.value})}
+          />
+        </span>
         {/* {error && <span className="error">{error}</span>} */}
-        <NumberRangeSelector 
-          rangeStart={firstNumber} 
-          setRangeStart={setFirstNumber}
-          rangeEnd={lastNumber}
-          setRangeEnd={setlastNumber} 
-          selectedNumbers={selectedNumbers} 
-          setSelectedNumbers={setSelectedNumbers}
-        />
-        {selectedNumbers.length > 0 && <p>Selected Numbers: {selectedNumbers.join(', ')}</p>}
+        { formData.fileSpec && <p>Path Spec: {formData.fileSpec}</p>}
+        <NumberRangeSelector formData={formData} setFormData={setFormData} />
+        {formData.selectedNumbers.length > 0 && <p>Selected Numbers: {formData.selectedNumbers.join(', ')}</p>}
       </div>
     </>
   );

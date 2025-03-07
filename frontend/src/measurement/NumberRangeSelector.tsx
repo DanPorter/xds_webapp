@@ -1,31 +1,43 @@
 import React from 'react';
-import './NumberRangeSelector.css';
+
+import { MeasurementForm } from './FormComponent';
 
 interface NumberRangeSelectorProps {
-  rangeStart: number | null;
-  setRangeStart: React.Dispatch<React.SetStateAction<number | null>>;
-  rangeEnd: number | null;
-  setRangeEnd: React.Dispatch<React.SetStateAction<number | null>>;
-  selectedNumbers: number[];
-  setSelectedNumbers: React.Dispatch<React.SetStateAction<number[]>>
+  formData: MeasurementForm;
+  setFormData: React.Dispatch<React.SetStateAction<MeasurementForm>>;
 }
 
-const NumberRangeSelector: React.FC<NumberRangeSelectorProps> = ({ rangeStart, setRangeStart, rangeEnd, setRangeEnd, selectedNumbers, setSelectedNumbers }) => {
+const NumberRangeSelector: React.FC<NumberRangeSelectorProps> = ({ formData, setFormData }) => {
+
+  const rangeStart = formData.rangeStart;
+  const rangeEnd = formData.rangeEnd;
+  const selectedNumbers = formData.selectedNumbers;
+  const setRangeStart = (start: number) => {
+    setFormData({ ...formData, rangeStart: start });
+  }
+  const setRangeEnd = (end: number) => {
+    setFormData({ ...formData, rangeEnd: end });
+  }
+  const setSelectedNumbers = (numbers: number[]) => {
+    setFormData({ ...formData, selectedNumbers: numbers });
+  }
 
   const handleRemove = (number: number) => {
-    setSelectedNumbers(selectedNumbers.filter((n) => n !== number));
+    setSelectedNumbers(formData.selectedNumbers.filter((n) => n !== number));
+    // setFormData({ ...formData, formData.selectedNumbers.filter((n) => n !== number));
   };
 
   const removeAll = () => {
+    // setFormData({ ...formData, selectedNumbers: [] });
     setSelectedNumbers([]);
   };
 
   const handleRangeSelect = () => {
     if (rangeStart !== null && rangeEnd !== null) {
       const range = Array.from({ length: rangeEnd - rangeStart + 1 }, (_, i) => rangeStart + i);
-      setSelectedNumbers([...selectedNumbers, ...range]);
-      setRangeStart(null);
-      setRangeEnd(null);
+      if ( selectedNumbers.length + range.length  < 20 ) {
+        setSelectedNumbers([...selectedNumbers, ...range]);
+      }  
     }
   };
 

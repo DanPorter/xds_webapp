@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import { LinePlotProps } from '@diamondlightsource/davidia';
 
-import './FormComponent.css';
+// import './FormComponent.css';
 import { defaults, FormErrors, FormData } from './formParameters';
 import OptionSelector from './optionSelector';
 import TextInput from './TextInput';
 import NumericInput from './NumericInput';
 import VectorInput from './VectorInput';
 import { handleSubmit } from './handleSubmit';
+import { Comparison } from '../App';
 
 
 interface plotSetter {
   plotSet1: React.Dispatch<React.SetStateAction<LinePlotProps>>;
   plotSet2: React.Dispatch<React.SetStateAction<LinePlotProps>>;
   tableSet: React.Dispatch<React.SetStateAction<string>>;
+  comparison: Comparison;
+  setComparison: React.Dispatch<React.SetStateAction<Comparison>>;
 }
 
 
-function SimulationInputs( { plotSet1, plotSet2, tableSet } : plotSetter ) {
+function SimulationInputs( { plotSet1, plotSet2, tableSet, comparison, setComparison } : plotSetter ) {
   const [formData, setFormData] = useState<FormData>(defaults);
-
   const [errors, setErrors] = useState<FormErrors>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -32,7 +34,7 @@ function SimulationInputs( { plotSet1, plotSet2, tableSet } : plotSetter ) {
   };
 
   return (
-    <form className="form-container" onSubmit={(e) => handleSubmit(e, formData, tableSet, plotSet1, plotSet2, setErrors)}>
+    <form className="form-container" onSubmit={(e) => handleSubmit(e, formData, tableSet, plotSet1, plotSet2, setErrors, comparison, setComparison)}>
       <h2>Quanty Simulation</h2>
       <OptionSelector formChange={handleChange} errors={errors}/>
       <NumericInput name="beta" label="Beta" value={formData.beta} onChange={handleChange} error={errors.beta} />

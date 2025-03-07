@@ -1,5 +1,5 @@
 import React from 'react';
-import './FormComponent.css';
+// import './FormComponent.css';
 import { tooltips } from './formParameters';
 
 interface VectorInputProps {

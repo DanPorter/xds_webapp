@@ -1,52 +1,58 @@
 
 import { useState } from 'react';
-import { LinePlotProps } from '@diamondlightsource/davidia';
-import MarkdownPreview from './MarkdownTextBox';
+import { LineData } from '@diamondlightsource/davidia';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
+import './app.css';
 
-import { DvDPlots, ExampleData } from './DavidiaPlots';
-import SimulationInputs from './sim/FormComponent';
-// import NumberSelector from './NumberSelector';
-// import HoverPanel from './HoverPanel';
-// import NumberRangeSelector from './NumberRangeSelector';
-import MeasurementInputs from './measurement/FormComponent';
+import MeasurementPanel from './measurement/PanelComponent';
+import ComparisonPanel from './comparison/PanelComponent';
+import SimulationPanel from './sim/PanelComponent';
+import OpenNotebook from './jupyterRunner';
 
+interface XasLines {
+  simulationPol1?: LineData;
+  simulationPol2?: LineData;
+  experimentPol1?: LineData;
+  experimentPol2?: LineData;
+}
+
+interface DiffLines {
+  simulation?: LineData;
+  experiment?: LineData;
+}
+
+export interface Comparison {
+  xasLines?: XasLines;
+  diffLines?: DiffLines;
+  table?: string;
+}
 
 function App() {
-  const [plot1, setPlot1] = useState<LinePlotProps>(ExampleData()) 
-  const [plot2, setPlot2] = useState<LinePlotProps>(ExampleData()) 
-  const [table, setTable] = useState('');
-  // const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
-
-  // const handleNumberSelect = (numbers: number[]) => {
-  //   setSelectedNumbers(numbers);
-  //   console.log('Selected numbers:', numbers);
-  // };
+  const [comparison, setComparison] = useState<Comparison>({})
   return (
     <Tabs>
       <TabList>
-        <Tab>Other Options</Tab>
+        <Tab>Experiment</Tab>
         <Tab>Simulation</Tab>
+        <Tab>Compare</Tab>
+        <Tab>Notebook</Tab>
       </TabList>
 
       <TabPanel>
-        <div>
-          <MeasurementInputs />
-        </div>
+        <MeasurementPanel {...{ comparison, setComparison }} /> 
       </TabPanel>
 
       <TabPanel>
-        <div className='my-window-grid'>
-          <div className='my-left-panel'>
-            <SimulationInputs plotSet1={setPlot1} plotSet2={setPlot2} tableSet={setTable} />
-          </div>
-          <div className='my-right-panel'>
-            <DvDPlots {...plot1} />
-            <DvDPlots {...plot2} />
-            <MarkdownPreview markdown={table} />
-          </div>
-        </div>
+        < SimulationPanel {...{ comparison, setComparison }} />
+      </TabPanel>
+
+      <TabPanel>
+        <ComparisonPanel {...comparison} />
+      </TabPanel>
+
+      <TabPanel>
+        <OpenNotebook />
       </TabPanel>
     </Tabs>
   )

@@ -5,6 +5,8 @@ import { validate } from './validateForm';
 import { decode } from 'messagepack';
 import { ExampleData } from '../DavidiaPlots';
 // import { decode } from '@msgpack/msgpack';
+import { api } from '../api';
+import { Comparison } from '../App';
 
 
 interface SimulationData {
@@ -20,14 +22,16 @@ export const handleSubmit = async (
   tableSet: React.Dispatch<React.SetStateAction<string>>,
   plotSet1: React.Dispatch<React.SetStateAction<LinePlotProps>>,
   plotSet2: React.Dispatch<React.SetStateAction<LinePlotProps>>,
-  setErrors: React.Dispatch<React.SetStateAction<FormErrors>>
+  setErrors: React.Dispatch<React.SetStateAction<FormErrors>>,
+  comparison: Comparison,
+  setComparison: React.Dispatch<React.SetStateAction<Comparison>>,
 ) => {
   e.preventDefault();
   console.log('Submit', formData);
   if (!validate(formData, setErrors)) return;
 
   try {
-    const response = await fetch('http://localhost:8123/api/submit', {
+    const response = await fetch(api + '/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,6 +46,19 @@ export const handleSubmit = async (
     if ('lineData' in data.plot1) {
       plotSet1(data.plot1);
       plotSet2(data.plot2);
+      setComparison({
+        ...comparison, 
+        xasLines: {
+          ...comparison.xasLines,
+          simulationPol1: data.plot1.lineData[0], 
+          simulationPol2: data.plot1.lineData[1],
+        }, 
+        diffLines: {
+          ...comparison.diffLines,
+          simulation: data.plot2.lineData[0],
+        }, 
+        table: data.table
+      })
     } else {
       plotSet1(ExampleData());
       plotSet2(ExampleData());
