@@ -1,6 +1,7 @@
 
 
-const QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe';//'Quanty';
+// const QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe';//'Quanty';
+const QUANTY_PATH = 'Quanty';
 
 export const tooltips: {[id: string]: string} = {
     ion: 'Atomic element',
