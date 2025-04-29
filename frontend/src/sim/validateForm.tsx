@@ -1,8 +1,9 @@
-import { FormData, FormErrors } from './formParameters';
 
+import { FormErrors } from './formParameters';
+import { SimulationInputForm } from '../App';
 
 export const validate = (
-  formData: FormData,
+  formData: SimulationInputForm,
   setErrors: React.Dispatch<React.SetStateAction<FormErrors>>
 ): boolean => {
   const newErrors: FormErrors = {};

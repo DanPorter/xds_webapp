@@ -1,29 +1,22 @@
 // Panel component in App.tsx
 
-import { useState } from 'react';
-import { LinePlotProps } from '@diamondlightsource/davidia';
+// import { useState } from 'react';
+// import { LinePlotProps } from '@diamondlightsource/davidia';
 import { DvDPlots } from '../DavidiaPlots';
 import MeasurementInputs from './FormComponent';
-import { Comparison } from '../App';
+import { MeasurementProps } from '../App';
 
-
-interface MeasurementPanelProps {
-  comparison: Comparison;
-  setComparison: React.Dispatch<React.SetStateAction<Comparison>>;
-}
 
 export default
-function MeasurementPanel({ comparison, setComparison }: MeasurementPanelProps) {
-
-  const [polPairPlots, setPolPairPlots] = useState<LinePlotProps[]>([]);
+function MeasurementPanel(props: MeasurementProps) {
 
   return (
     <div className='my-window-grid'>
         <div className='my-left-panel'>
-          <MeasurementInputs {...{setPolPairPlots, comparison, setComparison}} />
+          <MeasurementInputs {...props} />
         </div>
         <div className='my-right-panel'>
-          {polPairPlots.map((plot, i) => (
+          {props.plots.map((plot, i) => (
             <DvDPlots key={i} {...plot} />
           ))}
         </div>

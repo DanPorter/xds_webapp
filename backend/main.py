@@ -17,22 +17,14 @@ import nest_asyncio
 import requests
 
 from xds import gen_simulation, AVAILABLE_SYMMETRIES
-from xds.environment import AVAILABLE_EXPIDS, get_path_filespec, get_beamline
+from xds.environment import AVAILABLE_EXPIDS, get_path_filespec, get_beamline, get_quanty_path
 from xds.xas_analysis import find_pairs
 
 
 # Generate a secure token
 jupyter_token = secrets.token_hex(32)
 
-# Start Jupyter Notebook server
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup event
-    Popen(["jupyter", "notebook", "--no-browser", "--allow-root", f"--NotebookApp.token={jupyter_token}"])
-    yield
-    # Shutdown event (if needed)
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(title="XDS FastAPI", version="0.1.0")
 
 # app = FastAPI()
 logging.basicConfig()
@@ -52,21 +44,21 @@ app.add_middleware(
 # def serialise(obj: dict):
 #     return orjson.dumps(obj, default=None, option=orjson.OPT_SERIALIZE_NUMPY)
 
-@app.post("/start-notebook/")  # THIS DOESN'T CURRENTLY WORK
-async def start_notebook():
-    # Create a new Jupyter session
-    response = requests.post('http://localhost:8888/api/sessions', json={
-        'name': '',
-        'path': 'notebook.ipynb',  # notebook.ipynb in the current directory (as main.py)
-        'type': 'notebook',
-        'kernel': {
-            'name': 'python3'
-        }
-    })
-    session = response.json()
-    logger.info('Jupyter session:', session)
-    notebook_url = f"http://localhost:8888/notebooks/{session['path']}?token={jupyter_token}"
-    return JSONResponse(content={"notebook_url": notebook_url})
+# @app.post("/start-notebook/")  # THIS DOESN'T CURRENTLY WORK
+# async def start_notebook():
+#     # Create a new Jupyter session
+#     response = requests.post('http://localhost:8888/api/sessions', json={
+#         'name': '',
+#         'path': 'notebook.ipynb',  # notebook.ipynb in the current directory (as main.py)
+#         'type': 'notebook',
+#         'kernel': {
+#             'name': 'python3'
+#         }
+#     })
+#     session = response.json()
+#     logger.info('Jupyter session:', session)
+#     notebook_url = f"http://localhost:8888/notebooks/{session['path']}?token={jupyter_token}"
+#     return JSONResponse(content={"notebook_url": notebook_url})
 
 
 class SimulationInputs(BaseModel):
@@ -94,7 +86,8 @@ async def get_element():
 async def get_element():
     return {
         'beamline': get_beamline(),
-        'visits': AVAILABLE_EXPIDS
+        'visits': AVAILABLE_EXPIDS,
+        'quanty_path': get_quanty_path(),
     }
 
 

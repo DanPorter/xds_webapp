@@ -1,34 +1,29 @@
 import React from 'react';
 
-import { MeasurementForm } from './FormComponent';
+import { MeasurementProps } from '../App';
 
-interface NumberRangeSelectorProps {
-  formData: MeasurementForm;
-  setFormData: React.Dispatch<React.SetStateAction<MeasurementForm>>;
-}
-
-const NumberRangeSelector: React.FC<NumberRangeSelectorProps> = ({ formData, setFormData }) => {
-
-  const rangeStart = formData.rangeStart;
-  const rangeEnd = formData.rangeEnd;
-  const selectedNumbers = formData.selectedNumbers;
+const NumberRangeSelector: React.FC<MeasurementProps> = ( props ) => {
+  const { inputForm, setInputForm } = props;
+  const rangeStart = inputForm.rangeStart;
+  const rangeEnd = inputForm.rangeEnd;
+  const selectedNumbers = inputForm.selectedNumbers;
   const setRangeStart = (start: number) => {
-    setFormData({ ...formData, rangeStart: start });
+    setInputForm({ ...inputForm, rangeStart: start });
   }
   const setRangeEnd = (end: number) => {
-    setFormData({ ...formData, rangeEnd: end });
+    setInputForm({ ...inputForm, rangeEnd: end });
   }
   const setSelectedNumbers = (numbers: number[]) => {
-    setFormData({ ...formData, selectedNumbers: numbers });
+    setInputForm({ ...inputForm, selectedNumbers: numbers });
   }
 
   const handleRemove = (number: number) => {
-    setSelectedNumbers(formData.selectedNumbers.filter((n) => n !== number));
-    // setFormData({ ...formData, formData.selectedNumbers.filter((n) => n !== number));
+    setSelectedNumbers(inputForm.selectedNumbers.filter((n) => n !== number));
+    // setInputForm({ ...inputForm, formData.selectedNumbers.filter((n) => n !== number));
   };
 
   const removeAll = () => {
-    // setFormData({ ...formData, selectedNumbers: [] });
+    // setInputForm({ ...inputForm, selectedNumbers: [] });
     setSelectedNumbers([]);
   };
 

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import ndarray from 'ndarray';
+// import { min, max } from 'ndarray-ops';
 import {
   GlyphType,
   NDT,
@@ -12,12 +14,12 @@ import {
 
 
 export function ExampleData() {
-  const x = ndarray(new Float32Array([1, 2, 3, 4, 5])) as NDT;
-  const y = ndarray(new Float32Array([10, 20, 30, 40, 50])) as NDT;
+  const x = ndarray(new Float32Array([])) as NDT;
+  const y = ndarray(new Float32Array([])) as NDT;
   const lineProps = {
     plotConfig: {
-      xLabel: 'x label',
-      yLabel: 'y label',
+      xLabel: 'energy (eV)',
+      yLabel: 'intensity (arb. units)',
     },
     lineData: [
       {
@@ -47,7 +49,8 @@ export function ExampleData() {
 // }
 
 
-export function DvDPlots( lineProps: LinePlotProps ) {
+export function DvDPlots( lineProps: LinePlotProps, table?: String ) {
+  const [isTableVisible, setIsTableVisible] = useState(false); 
   console.log('lineProps:', lineProps)
   // lineProps.lineData.forEach((line: lineData) => {
   //   line.x = 'data' in line.x ? line.x as NDT : ndarray(new Float32Array(line.x as number[])) as NDT;
@@ -57,6 +60,174 @@ export function DvDPlots( lineProps: LinePlotProps ) {
   return (
     <>
       <LinePlot {...lineProps} updateSelection={null} />
+      {table && (
+        <div>
+          <button
+            onClick={() => setIsTableVisible(!isTableVisible)}
+            style={{
+              margin: '10px 0',
+              padding: '5px 10px',
+              cursor: 'pointer',
+              backgroundColor: '#007bff',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+            }}
+          >
+            {isTableVisible ? 'Hide Table' : 'Show Table'}
+          </button>
+          {isTableVisible && (
+            <div style={{ marginTop: '10px', border: '1px solid #ddd', padding: '10px' }}>
+              <h3>Table</h3>
+              <pre>{table}</pre>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+};
+
+
+interface XasLines {
+  simulationPol1?: LineData;
+  simulationPol2?: LineData;
+  experimentPol1?: LineData;
+  experimentPol2?: LineData;
+}
+
+interface DiffLines {
+  simulation?: LineData;
+  experiment?: LineData;
+}
+
+export interface PolXasFigureProps {
+  xasLines?: XasLines;
+  diffLines?: DiffLines;
+  table?: string;
+}
+
+
+export function PolXasFigure( {xasLines, diffLines, table}: PolXasFigureProps ) {
+  const [isTableVisible, setIsTableVisible] = useState(false); // State to toggle table visibility
+  const lineProps = {
+    plotConfig: {
+      xLabel: 'energy (eV)',
+      yLabel: 'intensity (arb. units)',
+    },
+    lineData: [],
+  } as LinePlotProps;
+  if (xasLines) {
+    if (xasLines.simulationPol1) {
+      lineProps.lineData.push({
+        key: 'simulationPol1',
+        lineParams: {
+          colour: 'blue',
+          pointSize: 6,
+          lineOn: true,
+          glyphType: GlyphType.Square,
+        } as LineParams,
+        x: xasLines.simulationPol1.x,
+        y: xasLines.simulationPol1.y,
+      } as LineData);
+    }
+    if (xasLines.simulationPol2) {
+      lineProps.lineData.push({
+        key: 'simulationPol2',
+        lineParams: {
+          colour: 'red',
+          pointSize: 6,
+          lineOn: true,
+          glyphType: GlyphType.Square,
+        } as LineParams,
+        x: xasLines.simulationPol2.x,
+        y: xasLines.simulationPol2.y,
+      } as LineData);
+    }
+    if (xasLines.experimentPol1) {
+      lineProps.lineData.push({
+        key: 'experimentPol1',
+        lineParams: {
+          colour: 'green',
+          pointSize: 6,
+          lineOn: true,
+          glyphType: GlyphType.Square,
+        } as LineParams,
+        x: xasLines.experimentPol1.x,
+        y: xasLines.experimentPol1.y,
+      } as LineData);
+    }
+    if (xasLines.experimentPol2) {
+      lineProps.lineData.push({
+        key: 'experimentPol2',
+        lineParams: {
+          colour: 'orange',
+          pointSize: 6,
+          lineOn: true,
+          glyphType: GlyphType.Square,
+        } as LineParams,
+        x: xasLines.experimentPol2.x,
+        y: xasLines.experimentPol2.y,
+      } as LineData);
+    }
+  }
+  if (diffLines) {
+    if (diffLines.simulation) {
+      lineProps.lineData.push({
+        key: 'simulation',
+        lineParams: {
+          colour: 'blue',
+          pointSize: 6,
+          lineOn: true,
+          glyphType: GlyphType.Square,
+        } as LineParams,
+        x: diffLines.simulation.x,
+        y: diffLines.simulation.y,
+      } as LineData);
+    }
+    if (diffLines.experiment) {
+      lineProps.lineData.push({
+        key: 'experiment',
+        lineParams: {
+          colour: 'red',
+          pointSize: 6,
+          lineOn: true,
+          glyphType: GlyphType.Square,
+        } as LineParams,
+        x: diffLines.experiment.x,
+        y: diffLines.experiment.y,
+      } as LineData);
+    }
+  }
+  console.log('lineProps:', lineProps)
+  
+  return (
+    <>
+      <LinePlot {...lineProps} updateSelection={null} />
+      {table && (
+        <div>
+          <button
+            onClick={() => setIsTableVisible(!isTableVisible)}
+            style={{
+              margin: '10px 0',
+              padding: '5px 10px',
+              cursor: 'pointer',
+              backgroundColor: '#007bff',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+            }}
+          >
+            {isTableVisible ? 'Hide Table' : 'Show Table'}
+          </button>
+          {isTableVisible && (
+            <div style={{ marginTop: '10px', border: '1px solid #ddd', padding: '10px' }}>
+              <h3>Table</h3>
+              <pre>{table}</pre>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

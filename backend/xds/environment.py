@@ -12,6 +12,7 @@ BEAMLINE = 'BEAMLINE'
 USER = ['USER', 'USERNAME']
 DLS = '/dls'
 MMG_BEAMLINES = ['i06', 'i06-1', 'i06-2', 'i10', 'i10-1', 'i16', 'i21']
+QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe'
 
 regex_scan_number = re.compile(r'\d{3,}')
 
@@ -50,6 +51,18 @@ def get_dls_visits(instrument: str | None = None, year: str | int | None = None)
     if os.path.isdir(dls_dir):
         return {p.name: p.path for p in os.scandir(dls_dir) if p.is_dir() and p.accessible()}
     return {}
+
+
+def get_quanty_path() -> str:
+    """Return path to quanty executable"""
+    import shutil
+    # check if Quanty is available in the system path
+    if shutil.which('Quanty'):
+        return shutil.which('Quanty')
+    # check if Quanty is available in the defult path
+    if os.path.isfile(QUANTY_PATH):
+        return QUANTY_PATH
+    return ''
 
 
 def list_files(folder_directory: str, extension='.nxs') -> list[str]:

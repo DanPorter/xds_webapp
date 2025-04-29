@@ -1,53 +1,38 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
-import { BeamlineConfig, ScanFiles, fetchInstrumentVisits, fetchScanFiles } from './getData';
-import { MeasurementForm } from './FormComponent';
+import { ScanFiles, fetchScanFiles } from './getData';
 import NumberRangeSelector from './NumberRangeSelector';
+import { MeasurementProps } from '../App';
 
 
-interface DataPathSelectorProps {
-  formData: MeasurementForm;
-  setFormData: React.Dispatch<React.SetStateAction<MeasurementForm>>;
-}
+const DataPathSelector: React.FC<MeasurementProps> = ( props ) => {
+  console.log('DataPathSelector props: ', props)
+  const { inputForm, setInputForm } = props;
+  const config = props.config;
+  const selectedInstrument = inputForm.selectedInstrument;
+  const setSelectedInstrument = (instrument: string) => setInputForm({...inputForm, selectedInstrument: instrument});
+  const selectedVisit = inputForm.selectedVisit;
+  const setSelectedVisit = (visit: string) => setInputForm({...inputForm, selectedVisit: visit});
+  const instruments = inputForm.instruments;
+  const setInstruments = (instruments: string[]) => setInputForm({...inputForm, instruments: instruments});
+  const visits = inputForm.visits;
+  const setVisits = (visits: string[]) => setInputForm({...inputForm, visits: visits});
+  const visitPath = inputForm.filePath
+  const setVisitPath = (path: string) => setInputForm({...inputForm, filePath: path})
 
-const DataPathSelector: React.FC<DataPathSelectorProps> = ({ formData, setFormData }) => {
-  const [data, setData] = useState<BeamlineConfig>({ visits: {}, beamline: '' });
-  const [selectedInstrument, setSelectedInstrument] = useState<string>('');
-  const [selectedVisit, setSelectedVisit] = useState<string>('');
-  // const [visitPath, setVisitPath] = useState<string>('');
-  const [instruments, setInstruments] = useState<string[]>([]);
-  const [visits, setVisits] = useState<string[]>([]);
-
-  const visitPath = formData.filePath
-  const setVisitPath = (path: string) => setFormData({...formData, filePath: path})
-
-  // load local atom data parameters
-  useEffect(() => {
-    const fetchData = async () => {
-      const result: BeamlineConfig = await fetchInstrumentVisits();
-      setData(result);
-      if (Object.keys(result.visits).length > 0) {
-        console.log('beamlines: ', Object.keys(result.visits))
-        setInstruments(Object.keys(result.visits));
-      }
-      if (result.beamline && result.beamline in result.visits) {
-        console.log('setting beamline to ', result.beamline);
-        setSelectedInstrument(result.beamline);
-        setVisits(Object.keys(result.visits[result.beamline]));
-        setSelectedVisit(Object.keys(result.visits[result.beamline])[0]);
-      }
-      if (result.beamline && result.beamline in result.visits) {
-        console.log('setting beamline to ', result.beamline);
-        setSelectedInstrument(result.beamline);
-        setVisits(Object.keys(result.visits[result.beamline]));
-        setSelectedVisit(Object.keys(result.visits[result.beamline])[0]);
-        setVisitPath(result.visits[result.beamline][Object.keys(result.visits[result.beamline])[0]]);
-      }
-    };
-    fetchData()
-      .catch(console.error);;
-  }, []);
+  // load local beamline file parameters
+  if (Object.keys(config.visits).length > 0) {
+    console.log('beamlines: ', Object.keys(config.visits))
+    setInstruments(Object.keys(config.visits));
+  }
+  if (config.beamline && config.beamline in config.visits) {
+    console.log('setting beamline to ', config.beamline);
+    setSelectedInstrument(config.beamline);
+    setVisits(Object.keys(config.visits[config.beamline]));
+    setSelectedVisit(Object.keys(config.visits[config.beamline])[0]);
+    setVisitPath(config.visits[config.beamline][Object.keys(config.visits[config.beamline])[0]]);
+  }
 
   // load files from visit path on visitPath change
   useEffect(() => {
@@ -57,8 +42,8 @@ const DataPathSelector: React.FC<DataPathSelectorProps> = ({ formData, setFormDa
       const result: ScanFiles = await fetchScanFiles(visitPath);
       console.log('result: ', result)
       if (result.first_number) {
-        setFormData({
-          ...formData, 
+        setInputForm({
+          ...inputForm, 
           fileSpec: result.file_spec,
           rangeStart: result.first_number,
           rangeEnd: result.last_number
@@ -126,8 +111,8 @@ const DataPathSelector: React.FC<DataPathSelectorProps> = ({ formData, setFormDa
       return matches && ! isNaN(Number(matches)) ? Number(matches) : [];
     });
     console.log('Extracted numbers from files: ', extractedNumbers)
-    setFormData({
-      ...formData, 
+    setInputForm({
+      ...inputForm, 
       fileSpec: files[0].name.replace(numberPattern, '{number}'),
       rangeStart: Math.min(...extractedNumbers),
       rangeEnd: Math.max(...extractedNumbers),
@@ -141,17 +126,19 @@ const DataPathSelector: React.FC<DataPathSelectorProps> = ({ formData, setFormDa
   const handleInstrumentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const instrument = event.target.value;
     setSelectedInstrument(instrument);
-    if (data.visits && instrument in data.visits) {
-      setVisits(Object.keys(data.visits[instrument]));
+    const visits = config.visits;
+    if (visits && instrument in visits) {
+      setVisits(Object.keys(visits[instrument]));
       setSelectedVisit('');
     }
   };
 
   const handleVisitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const visit = event.target.value;
+    const visits = config.visits;
     setSelectedVisit(visit);
-    if (data.visits) {
-      setVisitPath(data.visits[selectedInstrument][visit]);
+    if (visits) {
+      setVisitPath(visits[selectedInstrument][visit]);
     }
   };
 
@@ -209,15 +196,15 @@ const DataPathSelector: React.FC<DataPathSelectorProps> = ({ formData, setFormDa
           <input
             type="text"
             name="fileSpec"
-            value={formData.fileSpec}
+            value={inputForm.fileSpec}
             title='file name pattern with {number} as placeholder'
-            onChange={(e) => setFormData({...formData, fileSpec: e.target.value})}
+            onChange={(e) => setInputForm({...inputForm, fileSpec: e.target.value})}
           />
         </span>
         {/* {error && <span className="error">{error}</span>} */}
-        { formData.fileSpec && <p>Path Spec: {formData.fileSpec}</p>}
-        <NumberRangeSelector formData={formData} setFormData={setFormData} />
-        {formData.selectedNumbers.length > 0 && <p>Selected Numbers: {formData.selectedNumbers.join(', ')}</p>}
+        { inputForm.fileSpec && <p>Path Spec: {inputForm.fileSpec}</p>}
+        <NumberRangeSelector {... props } />
+        {inputForm.selectedNumbers.length > 0 && <p>Selected Numbers: {inputForm.selectedNumbers.join(', ')}</p>}
       </div>
     </>
   );

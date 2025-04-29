@@ -4,11 +4,10 @@ import { decode } from 'messagepack';
 import { api } from '../api';
 import { LinePlotProps } from '@diamondlightsource/davidia';
 
-import { Comparison } from '../App';
-import { MeasurementForm } from './FormComponent';
+import { MeasurementProps, MeasurementInputForm } from '../App';
 
 
-function generateFileList( formData: MeasurementForm ): string[] {
+function generateFileList( formData: MeasurementInputForm ): string[] {
   const files: string[] = [];
   for (let i = 0; i < formData.selectedNumbers.length; i++) {
     files.push(
@@ -24,18 +23,14 @@ function generateFileList( formData: MeasurementForm ): string[] {
 
 const handleSubmit = async (
   e: React.FormEvent,
-  formData: MeasurementForm,
-  setPolPairPlots: React.Dispatch<React.SetStateAction<LinePlotProps[]>>,
-  comparison: Comparison,
-  setComparison: React.Dispatch<React.SetStateAction<Comparison>>,
-  // setErrors: React.Dispatch<React.SetStateAction<FormErrors>>
+  {inputForm, setPlots, comparison, setComparison}: MeasurementProps,
 ) => {
   e.preventDefault();
-  console.log('Submiting Measurement', formData);
+  console.log('Submiting Measurement', inputForm);
   // if (!validate(formData, setErrors)) return;
 
   try {
-    const files = generateFileList(formData);
+    const files = generateFileList(inputForm);
     console.log('Files:', files);
 
     const response = await fetch(api + '/pol_pairs', {
@@ -46,18 +41,11 @@ const handleSubmit = async (
       body: JSON.stringify({files: files}),
     });
     const buffer = await response.arrayBuffer(); 
-    const data = await decode(new Uint8Array(buffer)) as LinePlotProps[];
+    const data = await decode(new Uint8Array(buffer)) as LinePlotProps[]; 
     console.log('Measurement Response:', data);
-    setPolPairPlots(data);
+    setPlots(data.slice(0, data.length-1));
     const averageData = data[data.length-1] // last item in data is the average 
-    setComparison({...comparison, xasLines: {
-      ...comparison.xasLines,
-      experimentPol1: averageData.lineData[0],  
-      experimentPol2: averageData.lineData[1],
-    }, diffLines: {
-      ...comparison.diffLines,
-      experiment: averageData.lineData[2],
-    }})
+    setComparison({...comparison, 'experiment': averageData})
   } catch (error) {
     console.error('Error:', error);
   }
