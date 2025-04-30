@@ -4,7 +4,7 @@ import { validate } from './validateForm';
 
 import { decode } from 'messagepack';
 // import { decode } from '@msgpack/msgpack';
-import { api } from '../api';
+import { simulation } from '../api';
 import { SimulationProps } from '../App';
 
 
@@ -26,7 +26,7 @@ export const handleSubmit = async (
   if (!validate(inputForm, setErrors)) return;
 
   try {
-    const response = await fetch(api + '/submit', {
+    const response = await fetch(simulation, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ export const handleSubmit = async (
       setPlots([data.plot1, data.plot2]);
       setComparison({
         ...comparison, 
-        simulation: data.plot1, 
+        simulation: data.plot2, 
         table: data.table
       })
     } else {

@@ -9,7 +9,7 @@ import ComparisonPanel from './comparison/PanelComponent';
 import SimulationPanel from './sim/PanelComponent';
 import OpenNotebook from './jupyterRunner';
 
-import { api } from "./api";
+import { config, elements } from "./api";
 import { LinePlotProps } from '@diamondlightsource/davidia';
 import { ScanFiles } from './measurement/getData';
 
@@ -142,10 +142,10 @@ function App() {
   const [comparison, setComparison] = useState<ComparisonProps>(comparisonData);
   // load beamline config
   useEffect(() => {
-    console.log('fetching config from ', api + '/config')
+    console.log('fetching config from ', config)
     const fetchData = async () => {
       try {
-        const response = await fetch(api + '/config');
+        const response = await fetch(config);
         const result = await response.json();
         setBackendData({...backendData, ...result});
         setSimulationInput((prev) => ({
@@ -163,7 +163,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(api + '/elements');
+        const response = await fetch(elements);
         const result = await response.json();
         setBackendData({...backendData, available_symmetries: result});
       } catch (error) {

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import ndarray from 'ndarray';
-// import { min, max } from 'ndarray-ops';
 import {
   GlyphType,
   NDT,
@@ -9,6 +8,7 @@ import {
   LinePlotProps,
   LinePlot,
 } from '@diamondlightsource/davidia';
+import Markdown from 'react-markdown';
 
 // import { createLineData } from '/scratch/grp66007/web/davidia/client/component/src/utils'
 
@@ -43,23 +43,80 @@ export function ExampleData() {
   return lineProps
 }
 
-// interface lineData {
-//   x: number[] | NDT;
-//   y: number[] | NDT;
-// }
+interface DvDPlotsProps {
+  lineProps: LinePlotProps;
+  table?: string;
+}
 
 
-export function DvDPlots( lineProps: LinePlotProps, table?: String ) {
+export function DvDPlots( { lineProps, table }: DvDPlotsProps ) {
   const [isTableVisible, setIsTableVisible] = useState(false); 
-  console.log('lineProps:', lineProps)
-  // lineProps.lineData.forEach((line: lineData) => {
-  //   line.x = 'data' in line.x ? line.x as NDT : ndarray(new Float32Array(line.x as number[])) as NDT;
-  //   line.y = 'data' in line.y ? line.y as NDT : ndarray(new Float32Array(line.y as number[])) as NDT;
-  // })
-  // console.log('updated lineProps:', lineProps)
+  const [visibleLines, setVisibleLines] = useState(
+    lineProps.lineData.reduce((acc, line) => {
+      acc[line.key] = true; // Initialize all lines as visible
+      return acc;
+    }, {} as Record<string, boolean>)
+  );
+
+  const toggleLineVisibility = (key: string) => {
+    setVisibleLines((prev) => {
+      const updatedVisibility = {
+        ...prev,
+        [key]: !prev[key], // Toggle visibility for the selected line
+      };
+
+      // Update yDomain based on visible lines
+      const visibleLinesData = lineProps.lineData.filter((line) => updatedVisibility[line.key]);
+      if (visibleLinesData.length > 0) {
+        lineProps.yDomain = [
+          Math.min(...visibleLinesData.flatMap((line) => Array.from(line.y.data))),
+          Math.max(...visibleLinesData.flatMap((line) => Array.from(line.y.data))),
+        ];
+      }
+
+      return updatedVisibility;
+    });
+  };
+
+  const filteredLineData = lineProps.lineData.filter((line) => visibleLines[line.key]);
+
   return (
-    <>
-      <LinePlot {...lineProps} updateSelection={null} />
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexDirection: 'row' }}>
+        {/* LinePlot */}
+        <div style={{ flex: 1 }}>
+          <LinePlot {...lineProps} lineData={filteredLineData} updateSelection={null} />
+        </div>
+
+        {/* Legend */}
+        <div style={{ marginLeft: '20px', display: 'flex', flexDirection: 'column', minWidth: '200px' }}>
+          <h4>Legend</h4>
+          <ul style={{ listStyleType: 'none', padding: 0 }}>
+            {lineProps.lineData.map((line) => (
+              <li key={line.key} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={visibleLines[line.key]}
+                  onChange={() => toggleLineVisibility(line.key)}
+                  style={{ marginRight: '10px' }}
+                />
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '20px',
+                    height: '10px',
+                    backgroundColor: line.lineParams.colour,
+                    marginRight: '10px',
+                  }}
+                ></span>
+                {line.key}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Table Button and Content */}
       {table && (
         <div>
           <button
@@ -78,13 +135,12 @@ export function DvDPlots( lineProps: LinePlotProps, table?: String ) {
           </button>
           {isTableVisible && (
             <div style={{ marginTop: '10px', border: '1px solid #ddd', padding: '10px' }}>
-              <h3>Table</h3>
-              <pre>{table}</pre>
+              <Markdown>{table}</Markdown>
             </div>
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

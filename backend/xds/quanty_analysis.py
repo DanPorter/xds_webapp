@@ -130,9 +130,10 @@ def process_results(ion: str, path: str, Nelec: float, edge: float, Rawout: subp
     axis1 = gen_plot_props('XAS', 'Energy [eV]', 'Intensity [a.u.]', xlim, None, *lines)
 
     lines = [
-        gen_line_data(xas[:, 0] + edge, xas[:, 2] / 3, 'k', label='average'),
-        gen_line_data(mcd[0:npts // 2, 0] + edge, mcd[0:npts // 2, 2], 'r', label=r'L$_3$'),
-        gen_line_data(mcd[npts // 2:, 0] + edge, mcd[npts // 2:, 2], 'b', label=r'L$_2$'),
+        # gen_line_data(xas[:, 0] + edge, xas[:, 2] / 3, 'k', label='average'),
+        # gen_line_data(mcd[0:npts // 2, 0] + edge, mcd[0:npts // 2, 2], 'r', label=r'L$_3$'),
+        # gen_line_data(mcd[npts // 2:, 0] + edge, mcd[npts // 2:, 2], 'b', label=r'L$_2$'),
+        gen_line_data(mcd[:, 0] + edge, mcd[:, 2], label='XMCD', colour='purple'),
     ]
     axis2 = gen_plot_props('XMCD', 'Energy [eV]', 'Intensity [a.u.]', xlim, None, *lines)
     return table_string, axis1, axis2

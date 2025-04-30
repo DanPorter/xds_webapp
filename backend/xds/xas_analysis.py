@@ -101,7 +101,9 @@ class PolarisationPair:
         return f"PolarisationPair({self.measurement1}, {self.measurement2})"
     
     def plot(self):
-        return gen_line_data(self.energy, self.difference, label=f"{self.measurement1.polarisation} - {self.measurement2.polarisation}")
+        return (
+            gen_line_data(self.energy, self.difference, label=f"{self.measurement1.polarisation} - {self.measurement2.polarisation}", colour='red')
+        )
     
     def output(self):
         lines = self.measurement1.plot(), self.measurement2.plot(), self.plot()
@@ -110,7 +112,7 @@ class PolarisationPair:
             'Energy (eV)',
             'Difference (a.u.)',
             (self.energy.min(), self.energy.max()),
-            (self.difference.min(), self.difference.max()),
+            (self.difference.min(), max(self.measurement1.tey.max(), self.measurement2.tey.max(), self.difference.max())),
             *lines
         )
 
@@ -145,9 +147,9 @@ class PolarisationSet:
     
     def plot(self):
         return (
-            gen_line_data(self.energy, self.xas1, label=f"XAS {self.pol1}"),
-            gen_line_data(self.energy, self.xas2, label=f"XAS {self.pol2}"),
-            gen_line_data(self.energy, self.difference, label=f"{self.pol1} - {self.pol2}"),
+            gen_line_data(self.energy, self.xas1, label=f"XAS {self.pol1}", colour='blue'),
+            gen_line_data(self.energy, self.xas2, label=f"XAS {self.pol2}", colour='green'),
+            gen_line_data(self.energy, self.difference, label=f"{self.pol1} - {self.pol2}", colour='red'),
         )
     
     def output(self):
@@ -156,7 +158,7 @@ class PolarisationSet:
             'Energy (eV)',
             'Difference (a.u.)',
             (self.energy.min(), self.energy.max()),
-            (self.difference.min(), self.difference.max()),
+            (self.difference.min(), max(self.xas1.max(), self.xas2.max(), self.difference.max())),
             *self.plot()
         )
 

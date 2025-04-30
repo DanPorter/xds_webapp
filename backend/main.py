@@ -116,8 +116,8 @@ def encoder(obj) -> dict[str, Any]:
     return obj
 
 
-@app.post("/api/submit")
-async def submit_form(data: SimulationInputs):
+@app.post("/api/simulation")
+async def simulation(data: SimulationInputs):
     # Run Quanty
     logger.info('Now I run Quanty with the following parameters:\n', data)
     try:
@@ -175,7 +175,7 @@ app.mount('/', StaticFiles(directory=INDEX, html=True), 'frontend')
 if __name__ == "__main__":
     import uvicorn
     import webbrowser
-    nest_asyncio.apply()
+    nest_asyncio.apply()  # asyncronous loop for jupyter notebook
 
     webbrowser.open_new_tab('http://localhost:8123/')
     # uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info", access_log=False, reload=True)

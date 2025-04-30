@@ -15,7 +15,7 @@ function SimulationPanel(props: SimulationProps) {
       </div>
       <div className='my-right-panel'>
         {props.plots.map((plot, i) => (
-          <DvDPlots key={i} {...plot} />
+          <DvDPlots key={i} lineProps={plot} />
         ))}
       </div>
     </div>
