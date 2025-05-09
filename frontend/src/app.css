@@ -1,3 +1,21 @@
+/* app.tsx */
+.container {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+  height: 100vw;
+  width: 100vw;
+}
+
+.banner {
+  background-color: #007bff; /* Blue background */
+  color: white; /* White text */
+  padding: 10px;
+  text-align: left;
+  font-size: 20px;
+  font-weight: bold;
+}
+
 .form-container {
   max-width: 400px;
   margin: 0 auto;
@@ -78,6 +96,19 @@ h2 {
   flex: 1;
 }
 
+.tenDq-container {
+  display: flex;
+  gap: 10px;
+}
+
+.tenDq-container input {
+  flex: 1;
+}
+
+.tenDq-item {
+  flex: 1; 
+}
+
 
 /* NumberRangeSelector */
 
@@ -91,6 +122,7 @@ h2 {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+  margin-top: 20px;
 }
 
 .number-inputs input {

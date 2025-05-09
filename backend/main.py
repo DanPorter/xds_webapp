@@ -3,7 +3,7 @@ import logging
 from typing import Any
 
 from fastapi import FastAPI
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -16,9 +16,11 @@ from contextlib import asynccontextmanager
 import nest_asyncio
 import requests
 
-from xds import gen_simulation, AVAILABLE_SYMMETRIES
+from xds import gen_simulation
 from xds.environment import AVAILABLE_EXPIDS, get_path_filespec, get_beamline, get_quanty_path
-from xds.xas_analysis import find_pairs
+from xds.parameters import AVAILABLE_SYMMETRIES, AVAILABLE_DQ
+from xds.xas_analysis import find_pairs, determine_element
+from xds.plot_models import lineProps
 
 
 # Generate a secure token
@@ -66,7 +68,7 @@ class SimulationInputs(BaseModel):
     charge: str
     symmetry: str
     beta: float
-    tenDq: float
+    tenDq: dict[str, float]  # Dq values for each symmetry
     bFieldX: float
     bFieldY: float
     bFieldZ: float
@@ -76,11 +78,48 @@ class SimulationInputs(BaseModel):
     temperature: float
     path: str
 
+class SimulationOutputs(BaseModel):
+    message: str
+    table: str
+    plot1: lineProps
+    plot2: lineProps
 
+
+class AvailableCharges(BaseModel):
+    charge: list[str]  # symmetries
+
+class AvailableElements(BaseModel):
+    ion: AvailableCharges
+
+class DqConfiguration(BaseModel):
+    conf: float
+
+class DqParameters(BaseModel):
+    initial: DqConfiguration  # keys are Dq values (e.g., "10Dq", "Dmu")
+    final: DqConfiguration
+
+class SymmetryDq(BaseModel):
+    symmetry: DqParameters  # Keys are symmetries (e.g., "Oh", "Td")
+
+class ChargeDq(BaseModel):
+    charge: SymmetryDq  # Keys are charge states (e.g., "2+", "3+")
+
+class AvailableDq(BaseModel):
+    """
+    Description of the Dq values for each element.
+    """
+    ion: ChargeDq
+
+
+#@app.get("/api/elements", response_model=AvailableElements)
 @app.get("/api/elements")
 async def get_element():
     return AVAILABLE_SYMMETRIES
 
+# @app.get("/api/dq-values", response_model=AvailableDq)
+@app.get("/api/dq-values")
+async def get_element():
+    return AVAILABLE_DQ  # {ion: {charge: {symmetry: {'initial': {'Dq': 0.1, ...}, 'final': {'Dq': 0.2, ...}}}}}
 
 @app.get("/api/config")
 async def get_element():
@@ -88,6 +127,7 @@ async def get_element():
         'beamline': get_beamline(),
         'visits': AVAILABLE_EXPIDS,
         'quanty_path': get_quanty_path(),
+        'available_dq_values': AVAILABLE_DQ,
     }
 
 
@@ -116,7 +156,7 @@ def encoder(obj) -> dict[str, Any]:
     return obj
 
 
-@app.post("/api/simulation")
+@app.post("/api/simulation", response_model=SimulationOutputs)
 async def simulation(data: SimulationInputs):
     # Run Quanty
     logger.info('Now I run Quanty with the following parameters:\n', data)
@@ -126,7 +166,7 @@ async def simulation(data: SimulationInputs):
             ch_str=data.charge,
             symmetry=data.symmetry,
             beta=data.beta,
-            dq=data.tenDq,
+            dq=data.tenDq['10Dq_i'] if '10Dq_i' in data.tenDq else 0.0,
             mag_field=[data.bFieldX, data.bFieldY, data.bFieldZ],
             exchange_field=[data.hFieldX, data.hFieldY, data.hFieldZ],
             temperature=data.temperature,
@@ -158,11 +198,56 @@ async def simulation(data: SimulationInputs):
 class DataFiles(BaseModel):
     files: list[str]
 
-@app.post("/api/pol_pairs")
+
+@app.post("/api/pol_pairs", response_model=list[lineProps])
 async def get_pairs(data: DataFiles):
     logger.info(f"Finding pairs in files: \n{'\n'.join(data.files)}")
     data = find_pairs(*data.files)
     logger.info(f"Found {len(data)} pairs")
+    packed_data = msgpack.packb(data, use_bin_type=True, default=encoder)
+    return Response(content=packed_data, media_type="application/x-msgpack")
+
+
+class LoadMeasuredData(BaseModel):
+    files: list[str]
+    background_type: str
+
+class MeasuredData(BaseModel):
+    pol_pairs: list[lineProps]
+    average: lineProps 
+    table: str
+    element: str
+    field: list[float, float, float]
+    temperature: float
+
+
+
+# @app.post("/api/measurement", response_model=MeasuredData)
+@app.post("/api/measurement")
+async def measurement(data: LoadMeasuredData):
+    logger.info(f"Finding pairs in files: \n{'\n'.join(data.files)}")
+    try:
+        pol_set = find_pairs(*data.files)
+        logger.info(f"Found {len(pol_set.measurements)} pairs")
+        table = pol_set.table()
+        data: MeasuredData = {
+            'pol_pairs': [measurement.output() for measurement in pol_set.measurements],
+            'average': pol_set.output(),
+            'table': table,
+            'element': pol_set.element,
+            'field': [pol_set.field_x, pol_set.field_y, pol_set.field_z],
+            'temperature': pol_set.temperature,
+        }
+    except ValueError as e:
+        logger.error(f"Error finding pairs: {e}")
+        data: MeasuredData = {
+            'pol_pairs': [],
+            'average': [],
+            'table': f"Error finding pairs: {e}",
+            'element': '',
+            'field': [0, 0, 0],
+            'temperature': 1.0,
+        }
     packed_data = msgpack.packb(data, use_bin_type=True, default=encoder)
     return Response(content=packed_data, media_type="application/x-msgpack")
 
@@ -179,4 +264,4 @@ if __name__ == "__main__":
 
     webbrowser.open_new_tab('http://localhost:8123/')
     # uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info", access_log=False, reload=True)
-    uvicorn.run(app, host="0.0.0.0", port=8123, log_level="info")
+    uvicorn.run("main:app", host="0.0.0.0", port=8123, log_level="info", reload=True)

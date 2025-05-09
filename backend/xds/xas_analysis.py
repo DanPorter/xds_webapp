@@ -6,26 +6,37 @@ Load experimental data from nexus files
 
 import os
 import numpy as np
+import h5py
 import hdfmap
+from tabulate import tabulate
 
 from .environment import regex_scan_number
+from .parameters import AVAILABLE_EDGES
 from .plot_models import gen_line_data, gen_plot_props
 
-XAS_METADATA = {
-    'cmd': '(cmd|scan_command)',
-    'date': 'start_time',
-    'pol': 'polarisation?("lh")',
-    'iddgap': 'iddgap',
-    'rowphase': 'idutrp if iddgap == 100 else iddtrp',
-    'endstation': 'instrument_name',
-    'temp': '(T_sample|lakeshore336_sample?(300))',
-    'rot': '(scmth|xabs_theta|ddiff_theta?(0))',
-    'field': 'np.sqrt(field_x?(0)**2 + field_y?(0)**2 + field_z?(0)**2)',
-    'energy': '(fastEnergy|pgm_energy|energy)',
-    'monitor': '(C2|ca62sr|mcs16|macr16|mcse16|macj316|mcsh16|macj216)',
-    'tey': '(C1|ca61sr|mcs17|macr17|mcse17|macj317|mcsh17|macj217)',
-    'tfy': '(C3|ca63sr|mcs18|macr18|mcse18|macj318|mcsh18|mcaj218)',
-}
+
+class XASMetadata:
+    cmd = '(cmd|scan_command)'
+    date = 'start_time'
+    pol = 'polarisation?("lh")'
+    iddgap = 'iddgap'
+    rowphase = 'idutrp if iddgap == 100 else iddtrp'
+    endstation = 'instrument_name'
+    temp = '(T_sample|itc3_device_sensor_temp|lakeshore336_cryostat|lakeshore336_sample?(300))'
+    rot = '(scmth|xabs_theta|ddiff_theta?(0))'
+    field = 'np.sqrt(field_x?(0)**2 + field_y?(0)**2 + field_z?(0)**2)'
+    field_x = 'field_x?(0)'
+    field_y = 'field_y?(0)'
+    field_z = '(magnet_field|ips_demand_field|field_z?(0))'
+    energy = '(fastEnergy|pgm_energy|energy)'
+    monitor = '(C2|ca62sr|mcs16|macr16|mcse16|macj316|mcsh16|macj216)'
+    tey = '(C1|ca61sr|mcs17|macr17|mcse17|macj317|mcsh17|macj217)'
+    tfy = '(C3|ca63sr|mcs18|macr18|mcse18|macj318|mcsh18|macaj218)'
+
+
+def check_metadata_paths(hdf_obj: h5py.File, hdf_map: hdfmap.NexusMap) -> dict[str, str]:
+    """Return a dictionary of paths for the metadata"""
+    return {k: hdf_map.eval(hdf_obj, f"_{v}") for k, v in vars(XASMetadata).items() if isinstance(v, str)}
 
 
 def average_energy_scans(*args: tuple[np.ndarray]):
@@ -44,6 +55,129 @@ def combine_energy_scans(energy, *args: tuple[np.ndarray, np.ndarray]):
     return data.mean(axis=0)
 
 
+def determine_element(energy: float) -> tuple[str, str]:
+    """
+    Determine the element from the energy axis of the spectra.
+
+    Note that only elements with available parameters are considered.
+
+    :param energy: energy value (eV) to determine the element
+    :return: (Element symbol, edge) as  strings
+    """
+    elements = list(AVAILABLE_EDGES.keys())
+    values = np.array(list(AVAILABLE_EDGES.values()))
+    return elements[np.argmin(np.abs(energy - values))], 'L2,3'  # currently only L2,3 edges are available
+
+
+def orbital_angular_momentum(energy: np.ndarray, linear_xas: np.ndarray, 
+                             difference: np.ndarray, nholes: float) -> float:
+    """
+    Calculate the sum rule for the angular momentum of the spectra
+    using the formula:
+    L = -2 * nholes * int[spectra d energy] / sum(spectra)
+
+    :param energy: Energy axis of the spectra
+    :param linear_xas: linear polarisation XAS spectra, or (left + right) polarisation
+    :param difference: difference XAS spectra (right - left) for both polarisations
+    :param nholes: Number of holes in the system
+    :return: Angular momentum of the spectra
+    """
+    if len(energy) != len(linear_xas) or len(energy) != len(difference):
+        raise ValueError(f"Energy and spectra must have the same length: {len(energy)} != {len(linear_xas)}")
+    if nholes <= 0:
+        raise ValueError(f"Number of holes must be greater than 0: {nholes}")
+    
+    # total intensity
+    tot = np.trapezoid(linear_xas, energy)
+    
+    # Calculate the sum rule for the angular momentum
+    L = -2 * nholes * np.trapezoid(difference, energy) / tot
+    return L
+
+
+def spin_angular_momentum(energy: np.ndarray, average: np.ndarray, 
+                          difference: np.ndarray, nholes: float, 
+                          split_energy: int | None = None, dipole_term: float = 0) -> float:
+    """
+    Calculate the sum rule for the spin angular momentum of the spectra
+    using the formula:
+    S = -2 * nholes * int[spectra d energy] / sum(spectra)
+
+    :param energy: Energy axis of the spectra
+    :param average: average XAS spectra (left + right) for both polarisations
+    :param difference: difference XAS spectra (right - left) for both polarisations
+    :param nholes: Number of holes in the system
+    :param split_energy: energy to split the spectra between L3 and L2 (or None to use the middle of the spectra)
+    :param dipole_term: magnetic dopole term (T_z), defaults to 0 for effective spin
+    :return: Spin angular momentum of the spectra
+    """
+    if len(energy) != len(average) or len(energy) != len(difference):
+        raise ValueError(f"Energy and spectra must have the same length: {len(energy)} != {len(average)}")
+    if nholes <= 0:
+        raise ValueError(f"Number of holes must be greater than 0: {nholes}")
+    if split_energy is None:
+        split_energy = (energy[0] + energy[-1]) / 2
+    
+    # total intensity
+    tot = np.trapezoid(average, energy)
+    
+    # Calculate the sum rule for the spin angular momentum
+    split_index = np.argmin(np.abs(energy - split_energy))
+    l3_energy = energy[split_index:]  # L3 edge at lower energy
+    l3_difference = difference[split_index:]
+    l3_integral = np.trapezoid(l3_difference, l3_energy)
+    l2_energy = energy[:split_index]
+    l2_difference = difference[:split_index]
+    l2_integral = np.trapezoid(l2_difference, l2_energy)
+    S_eff = (3 / 2) * nholes * (l3_integral - 2 * l2_integral) / tot
+    S = S_eff - dipole_term
+    return S
+
+
+def magnetic_moment(orbital: float, spin: float) -> float:
+    """
+    Calculate the magnetic moment of the system using the formula:
+    M = -g * (L + 2 * S)  WHERE DOES THIS COME FROM?
+
+    :param orbital: Orbital angular momentum of the system
+    :param spin: Spin angular momentum of the system
+    :return: Magnetic moment of the system
+    """
+    print('magnetic moment is probably wrong!')
+    g = 2.0  # Landé g-factor for free electron
+    return -g * (orbital + 2 * spin)
+
+
+def xmcd_table(energy: np.ndarray, average: np.ndarray, difference: np.ndarray,
+                nholes: float, split_energy: int | None = None, dipole_term: float = 0) -> str:
+    """
+    Create a table with the sum rules for the spectra.
+
+    :param energy: Energy axis of the spectra
+    :param average: average XAS spectra (left + right) for both polarisations
+    :param difference: difference XAS spectra (right - left) for both polarisations
+    :param nholes: Number of holes in the system
+    :param split_energy: energy to split the spectra between L3 and L2 (or None to use the middle of the spectra)
+    :param dipole_term: magnetic dopole term (T_z), defaults to 0 for effective spin
+    :return: table with the sum rules for the spectra
+    """
+    orbital = orbital_angular_momentum(energy, average, difference, nholes)
+    spin = spin_angular_momentum(energy, average, difference, nholes, split_energy, dipole_term)
+    table2 = [[r'sL$_z$', 'sS$_{eff}$'], [orbital, spin]]
+    tfmt = 'github'
+    table_string = '\n'.join([
+        # "## Theoretical values (Quanty)",
+        # tabulate(table1, headers='firstrow', tablefmt=tfmt),
+        "### Sum rules :",
+        tabulate(table2, headers='firstrow', tablefmt=tfmt),
+        # "### Sum rules 0:",
+        # tabulate(table3, headers='firstrow', tablefmt=tfmt),
+        # "### Deviations:",
+        # tabulate(table4, headers='firstrow', tablefmt=tfmt)
+    ])
+    return table_string
+
+
 class XASMeasurement:
     def __init__(self, filename: str, nexus_map: hdfmap.NexusMap):
         self.filename = filename
@@ -52,18 +186,26 @@ class XASMeasurement:
         self.map = nexus_map
 
         with hdfmap.load_hdf(filename) as hdf:
-            self.cmd = self.map.eval(hdf, XAS_METADATA['cmd'])
-            self.polarisation = self.map.eval(hdf, XAS_METADATA['pol'])
-            self.temperature = self.map.eval(hdf, XAS_METADATA['temp'])
-            self.field = self.map.eval(hdf, XAS_METADATA['field'])
-            self.energy = self.map.eval(hdf, XAS_METADATA['energy'])
+            try:
+                self.cmd = self.map.eval(hdf, XASMetadata.cmd)
+                self.polarisation = self.map.eval(hdf, XASMetadata.pol)
+                self.temperature = self.map.eval(hdf, XASMetadata.temp)
+                self.field_x = self.map.eval(hdf, XASMetadata.field_x)
+                self.field_y = self.map.eval(hdf, XASMetadata.field_y)
+                self.field_z = self.map.eval(hdf, XASMetadata.field_z)
+                self.energy = self.map.eval(hdf, XASMetadata.energy)
+                self.mean_energy = np.mean(self.energy)
+                default = np.ones_like(self.energy)
+                self.monitor = self.map.eval(hdf, XASMetadata.monitor, default=default)
+                self.tey = self.map.eval(hdf, XASMetadata.tey, default=default)
+                self.tfy = self.map.eval(hdf, XASMetadata.tfy, default=default)
+            except Exception as e:
+                paths = check_metadata_paths(hdf, self.map)
+                path_str = '\n '.join([f"{k}: {v}" for k, v in paths.items()])
+                raise ValueError(f"Error loading {self.basename}\n    paths:\n{path_str}\n\nException:\n{e}")
             if len(self.energy) <= 1:
-                en_path = self.map.eval(hdf, '_' + XAS_METADATA['energy'])
+                en_path = self.map.eval(hdf, '_' + XASMetadata.energy)
                 raise ValueError(f"Energy has the wrong shape: Energy [{self.energy.shape}]: {en_path}")
-            default = np.ones_like(self.energy)
-            self.monitor = self.map.eval(hdf, XAS_METADATA['monitor'], default=default)
-            self.tey = self.map.eval(hdf, XAS_METADATA['tey'], default=default)
-            self.tfy = self.map.eval(hdf, XAS_METADATA['tfy'], default=default)
         
         self.tey = self.tey / self.monitor
         self.tfy = self.tfy / self.monitor
@@ -71,6 +213,10 @@ class XASMeasurement:
     
     def __repr__(self):
         return f"XASMeasurement(#{self.scan_number}, '{self.polarisation}')"
+    
+    def determine_element(self) -> str:
+        """Determine the element and edge from the energy axis of the spectra."""
+        return determine_element(self.energy.mean())
     
     def plot(self):
         return gen_line_data(self.energy, self.tey, label=self.label)
@@ -89,7 +235,9 @@ class PolarisationPair:
         self.energy = av_energy
         self.difference = interp_pc - interp_nc
         self.temperature = (measurement1.temperature + measurement2.temperature) / 2
-        self.field = (measurement1.field + measurement2.field) / 2
+        self.field_x = (measurement1.field_x + measurement2.field_x) / 2
+        self.field_y = (measurement1.field_y + measurement2.field_y) / 2
+        self.field_z = (measurement1.field_z + measurement2.field_z) / 2
 
         self.title = (
             f"#{measurement1.scan_number}[{measurement1.polarisation}] - "
@@ -127,11 +275,16 @@ class PolarisationSet:
         interp_nc = combine_energy_scans(av_energy, *[(pair.measurement2.energy, pair.measurement2.tey) for pair in measurementPairs])
 
         self.energy = av_energy
+        self.mean_energy = np.mean(av_energy)
+        self.element, self.edge = determine_element(self.mean_energy)
         self.xas1 = interp_pc 
         self.xas2 = interp_nc
         self.difference = interp_pc - interp_nc
         self.temperature = sum([pair.temperature for pair in measurementPairs]) / len(measurementPairs)
-        self.field = sum([pair.field for pair in measurementPairs]) / len(measurementPairs)
+        self.field_x = sum([pair.field_x for pair in measurementPairs]) / len(measurementPairs)
+        self.field_y = sum([pair.field_y for pair in measurementPairs]) / len(measurementPairs)
+        self.field_z = sum([pair.field_z for pair in measurementPairs]) / len(measurementPairs)
+        self.field = np.sqrt(self.field_x**2 + self.field_y**2 + self.field_z**2)
 
         pol1 = self.measurements[0].measurement1.polarisation
         pol2 = self.measurements[0].measurement2.polarisation
@@ -143,7 +296,18 @@ class PolarisationSet:
         self.pol2 = pol2
     
     def __repr__(self):
-        return f"PolarisationSet({self.measurements})"
+        return f"PolarisationSet({len(self.measurements)} measurements, {self.element}{self.edge}, T={self.temperature:.1f} K, B={self.field:.1f} T)"
+    
+    def table(self):
+        output = xmcd_table(
+            energy=self.energy,
+            average=self.xas1 + self.xas2,
+            difference=self.difference,
+            nholes=2,  # TODO: get from metadata
+            split_energy=None,  # TODO: get from metadata
+            dipole_term=0,  # TODO: get from metadata
+        )
+        return output
     
     def plot(self):
         return (
@@ -163,14 +327,64 @@ class PolarisationSet:
         )
 
 
-def find_pairs(*filenames: str) -> list[PolarisationPair]:
+def find_similar_measurements(*filenames: str, energy_tol=1., temp_tol=0.1, field_tol=0.1) -> list[XASMeasurement]:
     """
-    returns pairs of xas measurements in paired polarisations (cl,cr or lh,lv etc)
+    Find similar measurements based on energy, temperature and field.
+
+    Each measurement is compared to the first one in the list, using energy, temperature and field tolerances.
+
+    The polarisation is also checked to be similar (lh, lv or cl, cr).
+
+    Scans with different or missing metadata are removed from the list.
+
+    :param filenames: List of filenames to compare
+    :param energy_tol: Tolerance for energy comparison (default: 1.0 eV)
+    :param temp_tol: Tolerance for temperature comparison (default: 0.1 K)
+    :param field_tol: Tolerance for field comparison (default: 0.1 T)
+    :return: List of similar measurements
     """
     if len(filenames) < 2:
         return []
     nexus_map = hdfmap.create_nexus_map(filenames[0])
     measurements = [XASMeasurement(filename, nexus_map) for filename in filenames]
+    mean_energy = measurements[0].mean_energy
+    temperature = measurements[0].temperature
+    field_x = measurements[0].field_x
+    field_y = measurements[0].field_y
+    field_z = measurements[0].field_z
+    polarisation = measurements[0].polarisation
+    if polarisation in ['lh', 'lv']:
+        similar_pols = ['lh', 'lv']
+    elif polarisation in ['cl', 'cr']:
+        similar_pols = ['cl', 'cr']
+    elif polarisation in ['nc', 'pc']:
+        similar_pols = ['nc', 'pc']
+    else:
+        raise ValueError(f"Unknown polarisation: {polarisation}")
+    similar = []
+    for m in measurements:
+        if (
+            abs(m.mean_energy - mean_energy) < energy_tol and 
+            abs(m.temperature - temperature) < temp_tol and
+            abs(m.field_x - field_x) < field_tol and
+            abs(m.field_y - field_y) < field_tol and
+            abs(m.field_z - field_z) < field_tol and
+            m.polarisation in similar_pols
+        ):
+            similar.append(m)
+        else:
+            print(f"Measurement {m} is not similar to {measurements[0]}")   
+    return similar
+
+
+def find_pairs(*filenames: str) -> PolarisationSet:
+    """
+    returns pairs of xas measurements in paired polarisations (cl,cr or lh,lv etc)
+    """
+    measurements = find_similar_measurements(*filenames)
+    if len(measurements) < 2:
+        raise ValueError(f"Not enough measurements! {len(measurements)}")
+    
     print('Measurements: ', measurements)
     polarisations = [m.polarisation for m in measurements]
     print('polarisations: ', polarisations)
@@ -182,18 +396,11 @@ def find_pairs(*filenames: str) -> list[PolarisationPair]:
         for pol in set(polarisations)
     ]
     if len(pol_indexes) < 2:
-        raise Exception(f"Not enough polarisations! {set(polarisations)}")
+        raise ValueError(f"Not enough polarisations! {set(polarisations)}")
     print(f"Pairing Polarisations: {polarisations[pol_indexes[0][0]]} and {polarisations[pol_indexes[1][0]]}")
     pairs = [
         PolarisationPair(measurements[i1], measurements[i2])
         for i1, i2 in zip(pol_indexes[0], pol_indexes[1])
     ]
-    pol_set = PolarisationSet(*pairs)
-    
-    # pairs = [
-    #     PolarisationPair(measurements[n], measurements[n+1]) 
-    #     for n in range(0, len(measurements), 2) 
-    #     # if (n + 1 < len(measurements) and measurements[n].polarisation != measurements[n+1].polarisation)
-    # ]
-    return [pair.output() for pair in pairs] + [pol_set.output()]
+    return PolarisationSet(*pairs)
 

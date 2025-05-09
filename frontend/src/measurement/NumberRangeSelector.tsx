@@ -17,9 +17,13 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( props ) => {
     setInputForm({ ...inputForm, selectedNumbers: numbers });
   }
 
-  const handleRemove = (number: number) => {
+  // const handleRemove = (number: number) => {
+  //   setSelectedNumbers(inputForm.selectedNumbers.filter((n) => n !== number));
+  //   // setInputForm({ ...inputForm, formData.selectedNumbers.filter((n) => n !== number));
+  // };
+  const handleRemove = (event: React.FormEvent, number: number) => {
+    event.preventDefault(); // Prevent default form submission
     setSelectedNumbers(inputForm.selectedNumbers.filter((n) => n !== number));
-    // setInputForm({ ...inputForm, formData.selectedNumbers.filter((n) => n !== number));
   };
 
   const removeAll = () => {
@@ -51,15 +55,16 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( props ) => {
           value={rangeEnd ?? ''}
           onChange={(e) => setRangeEnd(Number(e.target.value))}
         />
-        <button onClick={handleRangeSelect}>Select Range</button>
-        <button onClick={removeAll}>Remove All</button>
+        <button type="submit" onClick={handleRangeSelect}>Select Range</button>
+        <button type="submit" onClick={removeAll}>Remove All</button>
       </div>
       <div className="selected-numbers">
         {selectedNumbers.map((number) => (
           <button
             key={number}
+            type="submit"
             className="selected-number-button"
-            onClick={() => handleRemove(number)}
+            onClick={(e) => handleRemove(e, number)}
           >
             {number} &times;
           </button>

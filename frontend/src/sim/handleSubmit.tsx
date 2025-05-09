@@ -21,7 +21,7 @@ export const handleSubmit = async (
   setErrors: React.Dispatch<React.SetStateAction<FormErrors>>
 ) => {
   e.preventDefault();
-  const { inputForm, setPlots, setComparison, comparison } = props;
+  const { inputForm, setPlots, setTable, setComparison, comparison } = props;
   console.log('Simulation Submit', inputForm);
   if (!validate(inputForm, setErrors)) return;
 
@@ -39,6 +39,7 @@ export const handleSubmit = async (
     console.log('Response:', data.message);
     if ('lineData' in data.plot1) {
       setPlots([data.plot1, data.plot2]);
+      setTable(data.table);
       setComparison({
         ...comparison, 
         simulation: data.plot2, 
@@ -46,6 +47,7 @@ export const handleSubmit = async (
       })
     } else {
       setPlots([]);
+      setTable('');
     }
   } catch (error) {
     console.error('Error:', error);

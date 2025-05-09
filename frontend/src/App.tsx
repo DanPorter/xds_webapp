@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import './app.css';
@@ -9,7 +9,7 @@ import ComparisonPanel from './comparison/PanelComponent';
 import SimulationPanel from './sim/PanelComponent';
 import OpenNotebook from './jupyterRunner';
 
-import { config, elements } from "./api";
+import { config } from "./api";
 import { LinePlotProps } from '@diamondlightsource/davidia';
 import { ScanFiles } from './measurement/getData';
 
@@ -23,13 +23,25 @@ export interface BeamlineConfig {
     };
   };
   quanty_path: string;
-  available_symmetries: {
+  available_dq_values: {
     // element
     [key: string]: {
-      // charge: symmetries[]
-      [key: string]: string[];
+      // charge
+      [key: string]: {
+        // symmetry
+        [key: string]: {
+          initial: {
+            // dq values
+            [key: string]: number;
+          }
+          final: {
+            // dq values
+            [key: string]: number;
+          };
+        }
+      }
     };
-  }
+  };
 };
 
 export interface MeasurementInputForm {
@@ -53,7 +65,9 @@ export interface SimulationInputForm {
   symmetry: string;
   symmetries: string[];
   beta: number;
-  tenDq: number;
+  tenDq: {
+    [key: string]: number;
+  };
   bFieldX: number;
   bFieldY: number;
   bFieldZ: number;
@@ -76,8 +90,12 @@ export interface MeasurementProps {
   setInputForm: React.Dispatch<React.SetStateAction<MeasurementInputForm>>;
   plots: LinePlotProps[];
   setPlots: React.Dispatch<React.SetStateAction<LinePlotProps[]>>;
+  table: string;
+  setTable: React.Dispatch<React.SetStateAction<string>>;
   comparison: ComparisonProps;
   setComparison: React.Dispatch<React.SetStateAction<ComparisonProps>>;
+  simulationInput: SimulationInputForm;
+  setSimulationInput: React.Dispatch<React.SetStateAction<SimulationInputForm>>;
 }
 
 export interface SimulationProps {
@@ -86,6 +104,8 @@ export interface SimulationProps {
   setInputForm: React.Dispatch<React.SetStateAction<SimulationInputForm>>;
   plots: LinePlotProps[];
   setPlots: React.Dispatch<React.SetStateAction<LinePlotProps[]>>;
+  table: string;
+  setTable: React.Dispatch<React.SetStateAction<string>>;
   comparison: ComparisonProps;
   setComparison: React.Dispatch<React.SetStateAction<ComparisonProps>>;
 }
@@ -93,13 +113,13 @@ export interface SimulationProps {
 
 function App() {
   // defaults
-  const configData = {
+  const configData: BeamlineConfig = {
     beamline: '', 
     visits: {}, 
-    quanty_path: '', 
-    available_symmetries: {}
-  } as BeamlineConfig;
-  const measurementForm = {
+    quanty_path: '',
+    available_dq_values: {},
+  };
+  const measurementForm: MeasurementInputForm = {
     selectedInstrument: '',
     selectedVisit: '',
     visitPath: '',
@@ -111,15 +131,15 @@ function App() {
     filePath: '',
     fileSpec: '',
     selectedNumbers: []
-  } as MeasurementInputForm;
-  const simulationForm = {
+  };
+  const simulationForm: SimulationInputForm = {
     ion: '',
     charge: '',
     charges: [],
     symmetry: '',
     symmetries: [],
     beta: 0.8,
-    tenDq: 1.0,
+    tenDq: {'10Dq': 0.0},
     bFieldX: 0.0,
     bFieldY: 0.0,
     bFieldZ: 1.0,
@@ -128,18 +148,21 @@ function App() {
     hFieldZ: 0.0,
     temperature: 1.0,
     path: '',
-  } as SimulationInputForm;
-  const comparisonData = {
+  };
+  const comparisonData: ComparisonProps = {
     experiment: { plotConfig: {}, lineData: [] } as LinePlotProps,
     simulation: { plotConfig: {}, lineData: [] } as LinePlotProps
-  } as ComparisonProps;
+  };
   // states
   const [backendData, setBackendData] = useState<BeamlineConfig>(configData);
   const [measurementInput, setMeasurementInput] = useState<MeasurementInputForm>(measurementForm);
   const [measurementPlots, setMeasurementPlots] = useState<LinePlotProps[]>([]);
+  const [measurementTable, setMeasurementTable] = useState<string>('');
   const [simulationInput, setSimulationInput] = useState<SimulationInputForm>(simulationForm);
   const [simulationPlots, setSimulationPlots] = useState<LinePlotProps[]>([]);
+  const [simulationTable, setSimulationTable] = useState<string>('');
   const [comparison, setComparison] = useState<ComparisonProps>(comparisonData);
+  
   // load beamline config
   useEffect(() => {
     console.log('fetching config from ', config)
@@ -159,20 +182,7 @@ function App() {
 
     fetchData();
   }, []);
-  // load local atom data parameters
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(elements);
-        const result = await response.json();
-        setBackendData({...backendData, available_symmetries: result});
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
 
-    fetchData();
-  }, []);
   // props
   const measurementProps: MeasurementProps = {
     config: backendData,
@@ -180,8 +190,12 @@ function App() {
     setInputForm: setMeasurementInput,
     plots: measurementPlots,
     setPlots: setMeasurementPlots,
+    table: measurementTable,
+    setTable: setMeasurementTable,
     comparison: comparison,
-    setComparison: setComparison
+    setComparison: setComparison,
+    simulationInput: simulationInput,
+    setSimulationInput: setSimulationInput,
   }
   const simulationProps: SimulationProps = {
     config: backendData,
@@ -189,35 +203,40 @@ function App() {
     setInputForm: setSimulationInput,
     plots: simulationPlots,
     setPlots: setSimulationPlots,
+    table: simulationTable,
+    setTable: setSimulationTable,
     comparison: comparison,
     setComparison: setComparison
   }
 
   return (
-    <Tabs>
-      <TabList>
-        <Tab>Experiment</Tab>
-        <Tab>Simulation</Tab>
-        <Tab>Compare</Tab>
-        <Tab>Notebook</Tab>
-      </TabList>
+    <div className="container">
+      <div className="banner">PolSpeX</div>
+      <Tabs>
+        <TabList>
+          <Tab>Experiment</Tab>
+          <Tab>Simulation</Tab>
+          <Tab>Compare</Tab>
+          <Tab>Notebook</Tab>
+        </TabList>
 
-      <TabPanel>
-        <MeasurementPanel {... measurementProps} /> 
-      </TabPanel>
+        <TabPanel>
+          <MeasurementPanel {... measurementProps} /> 
+        </TabPanel>
 
-      <TabPanel>
-        < SimulationPanel {... simulationProps} />
-      </TabPanel>
+        <TabPanel>
+          < SimulationPanel {... simulationProps} />
+        </TabPanel>
 
-      <TabPanel>
-        <ComparisonPanel {...comparison} />
-      </TabPanel>
+        <TabPanel>
+          <ComparisonPanel {...comparison} />
+        </TabPanel>
 
-      <TabPanel>
-        <OpenNotebook />
-      </TabPanel>
-    </Tabs>
+        <TabPanel>
+          <OpenNotebook />
+        </TabPanel>
+      </Tabs>
+    </div>
   )
 }
 

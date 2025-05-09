@@ -11,7 +11,7 @@ export const validate = (
   if (!formData.charge) newErrors.charge = 'Charge is required';
   if (!formData.symmetry) newErrors.symmetry = 'Symmetry is required';
   if (formData.beta < 0) newErrors.beta = 'Beta must be greater than 0';
-  if (formData.tenDq < 0) newErrors.tenDq = '10Dq must be greater than 0';
+  // if (formData.tenDq < 0) newErrors.tenDq = '10Dq must be greater than 0';
   if (formData.temperature <= 0) newErrors.temperature = 'Temperature must be greater than 0';
 
   setErrors(newErrors);

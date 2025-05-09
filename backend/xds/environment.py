@@ -5,6 +5,7 @@ Check environment variables and file system
 import os
 import re
 import subprocess
+import tempfile
 from datetime import datetime
 
 # environment variables on beamline computers
@@ -15,6 +16,14 @@ MMG_BEAMLINES = ['i06', 'i06-1', 'i06-2', 'i10', 'i10-1', 'i16', 'i21']
 QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe'
 
 regex_scan_number = re.compile(r'\d{3,}')
+
+
+# Find writable directory
+TMPDIR = tempfile.gettempdir()
+if not os.access(TMPDIR, os.W_OK):
+    TMPDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if not os.access(TMPDIR, os.W_OK):
+        TMPDIR = os.path.expanduser('~')
 
 
 # Initialise available beamlines

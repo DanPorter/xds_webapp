@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import MarkdownPreview from '../MarkdownTextBox';
 import { DvDPlots } from '../DavidiaPlots';
-import { LinePlotProps } from '@diamondlightsource/davidia';
+import { LinePlotProps, LineData, LineParams, GlyphType } from '@diamondlightsource/davidia';
 import { ComparisonProps } from '../App';
 import ndarray from 'ndarray';
 import ops from 'ndarray-ops';
@@ -9,18 +9,41 @@ import ops from 'ndarray-ops';
 export default function ComparisonPanel(comparison: ComparisonProps) {
   console.log('ComparisonPanel:', comparison);
 
+  // defaults for line data
+  const defaultLineData: LineData = {
+    lineParams: {
+      name: 'Default',
+      colour: 'blue',
+      pointSize: 0,
+      lineOn: true,
+      glyphType: GlyphType.Square,
+    } as LineParams,
+    x: ndarray(new Float32Array([0, 1, 2])),
+    y: ndarray(new Float32Array([0, .1, .2])),
+    key: 'Default',
+    xDomain: [0, 1],
+    yDomain: [0, 1],
+  };
+  const experimentLineData = comparison.experiment.lineData[2] || defaultLineData; // Check if lineData has at least 3 elements
+  const simulationLineData = comparison.simulation.lineData[0] || defaultLineData; // Use the first line data from the simulation
+  experimentLineData.key = 'Experiment'; // Set the label for the experiment line
+  simulationLineData.key = 'Simulation'; // Set the label for the simulation line
+  console.log('experimentLineData', experimentLineData);
+  console.log('simulationLineData', simulationLineData);
+
   // determine approximate scale of the y-axis
-  const expSum = Math.abs(ops.sum(ndarray(new Float32Array(comparison.experiment.lineData[2].y.data))));
-  const simSum = Math.abs(ops.sum(ndarray(new Float32Array(comparison.simulation.lineData[0].y.data))));
+  const expSum = Math.abs(ops.sum(ndarray(new Float32Array(experimentLineData.y.data))));
+  const simSum = Math.abs(ops.sum(ndarray(new Float32Array(simulationLineData.y.data))));
   const scale = expSum / simSum; // Calculate the scale factor based on the sum of y-values
   console.log('expSum', expSum, 'simSum', simSum, 'scale:', scale);
   // const scale = 1.0; // Default scale factor
 
   // useRef (multipoint in Davidia)
-  const [xOffset, setXOffset] = useState(0.0); // State to manage the x-axis offset
+  const [xOffset, setXOffset] = useState(4.0); // State to manage the x-axis offset
   const [yScale, setYScale] = useState(scale); // State to manage the y-axis scale
   const [invertY, setInvertY] = useState(false); // State to manage y-axis inversion
-  const [adjustedSimulation, setAdjustedSimulation] = useState(comparison.simulation); // State for adjusted simulation data
+  const [adjustedSimulation, setAdjustedSimulation] = useState<LineData>(simulationLineData); // State for adjusted simulation data
+  const [yDomain, setYDomain] = useState(experimentLineData.yDomain); // State for y-axis domain
 
   // create single plot
   const plot: LinePlotProps = {
@@ -29,52 +52,41 @@ export default function ComparisonPanel(comparison: ComparisonProps) {
       yLabel: 'intensity (arb. units)',
     },
     lineData: [
-      comparison.experiment.lineData[2], // Use the last line data from the experiment
-      adjustedSimulation.lineData[0], // Use the first line data from the simulation
+      experimentLineData, // Check if lineData has at least 3 elements
+      adjustedSimulation, // Use the first line data from the simulation
     ],
-    xDomain: comparison.experiment.xDomain,
-    yDomain: comparison.experiment.yDomain,
+    xDomain: experimentLineData.xDomain,
+    yDomain: yDomain,
   };
 
   // Update adjusted simulation data whenever xOffset changes
   useEffect(() => {
-    const adjustedLineData = comparison.simulation.lineData.map((line) => {
-      const xArray = ndarray(new Float32Array(line.x.data)); // Copy the original x-axis data
-      const yArray = ndarray(new Float32Array(line.y.data)); // Copy the original y-axis data
-      const yMult = invertY ? -1 : 1; // Determine the multiplier for y-axis inversion
-      ops.adds(xArray, xArray, xOffset); // Add offset to x-axis data
-      ops.muls(yArray, yArray, yScale * yMult); // Scale the y-axis data
-      return {
-        ...line,
-        x: xArray,
-        y: yArray,
-        label: 'Simulation', // Set the label for the simulation line
-      };
-    });
+    const xArray = ndarray(new Float32Array(simulationLineData.x.data)); // Copy the original x-axis data
+    const yArray = ndarray(new Float32Array(simulationLineData.y.data)); // Copy the original y-axis data
+    const yMult = invertY ? -1 : 1; // Determine the multiplier for y-axis inversion
+    ops.adds(xArray, xArray, xOffset); // Add offset to x-axis data
+    ops.muls(yArray, yArray, yScale * yMult); // Scale the y-axis data
 
+    
+    let yMin = Math.min(
+      ...yArray.data,
+      ...experimentLineData.y.data
+    ); // Calculate the minimum y-value
+    let yMax = Math.max(
+      ...yArray.data,
+      ...experimentLineData.y.data
+    ); // Calculate the maximum y-value
+    yMin < 0 ? yMin = 1.1 * yMin : yMin = 0.9 * yMin;
+    yMax < 0 ? yMax = 0.9 * yMax : yMax = 1.1 * yMax; // Adjust the y-axis domain based on the minimum and maximum values
+
+    setYDomain([yMin, yMax]);
     setAdjustedSimulation({
-      ...comparison.simulation,
-      lineData: adjustedLineData,
+      ...simulationLineData,
+      x: xArray, // Use the adjusted x-axis data
+      y: yArray, // Use the adjusted y-axis data
+      // key: 'Simulation', // Set the label for the simulation line
     });
   }, [xOffset, yScale, invertY, comparison.simulation]);
-
-  // useEffect(() => {
-  //   const adjustedLineData = comparison.simulation.lineData.map((line) => {
-  //     const yArray = ndarray(new Float32Array(line.y.data)); // Copy the original y-axis data
-  //     ops.muls(yArray, yArray, yScale); // Scale the y-axis data
-  //     return {
-  //       ...line,
-  //       y: yArray,
-  //     };
-  //   });
-
-  //   setAdjustedSimulation({
-  //     ...adjustedSimulation,
-  //     lineData: adjustedLineData,
-  //   });
-  // }
-  // , [yScale, adjustedSimulation]);
-
   return (
     <div className="my-window-grid">
       <div className="my-left-panel">
@@ -114,10 +126,6 @@ export default function ComparisonPanel(comparison: ComparisonProps) {
       </div>
       <div className="my-right-panel">
         <DvDPlots lineProps={plot} />
-        {/* <h3>Experiment</h3>
-        <DvDPlots lineProps={comparison.experiment} />
-        <h3>Simulation</h3>
-        <DvDPlots lineProps={adjustedSimulation} /> */}
         <MarkdownPreview markdown={comparison.table ? comparison.table : ''} />
       </div>
     </div>

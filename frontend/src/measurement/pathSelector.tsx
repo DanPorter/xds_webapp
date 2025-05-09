@@ -51,7 +51,7 @@ const DataPathSelector: React.FC<MeasurementProps> = ( props ) => {
       }
     };
     fetchData()
-      .catch(console.error);;
+      .catch(console.error);
   }, [visitPath]);
 
   // client side directory selector

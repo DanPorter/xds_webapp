@@ -8,7 +8,7 @@ import {
   LinePlotProps,
   LinePlot,
 } from '@diamondlightsource/davidia';
-import Markdown from 'react-markdown';
+import MarkdownPreview from './MarkdownTextBox';
 
 // import { createLineData } from '/scratch/grp66007/web/davidia/client/component/src/utils'
 
@@ -52,11 +52,9 @@ interface DvDPlotsProps {
 export function DvDPlots( { lineProps, table }: DvDPlotsProps ) {
   const [isTableVisible, setIsTableVisible] = useState(false); 
   const [visibleLines, setVisibleLines] = useState(
-    lineProps.lineData.reduce((acc, line) => {
-      acc[line.key] = true; // Initialize all lines as visible
-      return acc;
-    }, {} as Record<string, boolean>)
+    Object.fromEntries(lineProps.lineData.map((line) => [line.key, true]))
   );
+  console.log('visibleLines:', visibleLines);
 
   const toggleLineVisibility = (key: string) => {
     setVisibleLines((prev) => {
@@ -135,7 +133,7 @@ export function DvDPlots( { lineProps, table }: DvDPlotsProps ) {
           </button>
           {isTableVisible && (
             <div style={{ marginTop: '10px', border: '1px solid #ddd', padding: '10px' }}>
-              <Markdown>{table}</Markdown>
+              <MarkdownPreview markdown={table} />
             </div>
           )}
         </div>

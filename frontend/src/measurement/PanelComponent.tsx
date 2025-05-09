@@ -3,6 +3,7 @@
 import { DvDPlots } from '../DavidiaPlots';
 import MeasurementInputs from './FormComponent';
 import { MeasurementProps } from '../App';
+import MarkdownPreview from '../MarkdownTextBox';
 
 
 export default
@@ -20,7 +21,10 @@ function MeasurementPanel(props: MeasurementProps) {
             <DvDPlots key={i} lineProps={plot} />
           ))}
           <h3>Average</h3>
-          <DvDPlots lineProps={props.comparison.experiment} table="# Average\nHere is some text." />
+          <DvDPlots lineProps={props.comparison.experiment} />
+          <div style={{ marginTop: '10px', border: '1px solid #ddd', padding: '10px' }}>
+            <MarkdownPreview markdown={props.table ? props.table : ''} />
+          </div>
         </div>
     </div>
   )

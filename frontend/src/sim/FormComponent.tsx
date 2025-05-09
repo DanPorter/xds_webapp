@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { FormErrors, tooltips } from './formParameters';
+import { FormErrors, tooltips, dq_labels } from './formParameters';
 import { TextInput, NumericInput, VectorInput } from './formInputs';
 import elementDescription from './elements';
 import { handleSubmit } from './handleSubmit';
@@ -12,7 +12,7 @@ function SimulationInputs( props: SimulationProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const formData = props.inputForm;
   const setFormData = props.setInputForm;
-  const available_symmetries = props.config.available_symmetries;
+  const available_dq_values = props.config.available_dq_values;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -25,7 +25,7 @@ function SimulationInputs( props: SimulationProps) {
 
   const handleElementChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const element = event.target.value;
-    const charges = Object.keys(available_symmetries[element] || {});
+    const charges = Object.keys(available_dq_values[element] || {});
     console.log('Element changed:', element, 'charges:', charges);
     setFormData({
       ...formData,
@@ -34,19 +34,21 @@ function SimulationInputs( props: SimulationProps) {
       symmetry: '',
       symmetries: [],
       charges: charges,
+      tenDq: {'10Dq': 0.0},
     });
   };
 
   const handleChargeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const charge = event.target.value;
     console.log('Charge changed:', charge);
-    const symmetries = available_symmetries[formData.ion][charge] || [];
+    const symmetries = Object.keys(available_dq_values[formData.ion][charge] || []);
     console.log('Charge changed:', charge, 'symmetries:', symmetries);
     setFormData({
       ...formData,
       charge: charge,
       symmetry: '',
       symmetries: symmetries,
+      tenDq: {'10Dq': 0.0},
     });
   };
 
@@ -56,8 +58,10 @@ function SimulationInputs( props: SimulationProps) {
     setFormData({
       ...formData,
       symmetry: symmetry,
+      tenDq: available_dq_values[formData.ion][formData.charge][symmetry]['initial'] || {'10Dq': 0.0},
     });
   };
+
   return (
     <form className="form-container" onSubmit={(e) => handleSubmit(e, props, setErrors)}>
       <h2>Quanty Simulation</h2>
@@ -65,7 +69,7 @@ function SimulationInputs( props: SimulationProps) {
         <label title={tooltips.ion}>Element:</label>
         <select name="ion" title={tooltips.ion} value={formData.ion} onChange={handleElementChange}>
           <option value="">Select Element</option>
-          {Object.keys(available_symmetries).map((element) => (
+          {Object.keys(available_dq_values).map((element) => (
             <option key={element} title={elementDescription(element)} value={element}>
               {element}
             </option>
@@ -99,8 +103,30 @@ function SimulationInputs( props: SimulationProps) {
         </select>
         {errors.symmetry && <span className="error">{errors.symmetry}</span>}
       </div>
+
+      <div className="form-group">
+        <div className="tenDq-container">
+          {Object.entries(formData.tenDq).map(([label, value]) => (
+            <div key={label} className="tenDq-item">
+              <label title={tooltips[label]}>{dq_labels[label]}:</label>
+              <input
+                type="number"
+                name={`tenDq.${label}`}
+                value={value}
+                title={label}
+                onChange={(e) => {
+              const updatedTenDq = { ...formData.tenDq, [label]: Number(e.target.value) };
+              setFormData({ ...formData, tenDq: updatedTenDq });
+                }}
+                disabled={!formData.symmetry}
+              />
+            </div>
+          ))}
+        </div>
+        {errors.tenDq && <span className="error">{errors.tenDq}</span>}
+      </div>
       <NumericInput name="beta" label="Beta" value={formData.beta} onChange={handleChange} error={errors.beta} />
-      <NumericInput name="tenDq" label="10Dq" value={formData.tenDq} onChange={handleChange} error={errors.tenDq} />
+      {/* <NumericInput name="tenDq" label="10Dq" value={formData.tenDq} onChange={handleChange} error={errors.tenDq} /> */}
       <VectorInput name="bField" label="Magnetic Field [T]" value={[formData.bFieldX, formData.bFieldY, formData.bFieldZ]} onChange={handleChange} error={errors.bField} />
       <VectorInput name="hField" label="Exchange Field [eV]" value={[formData.hFieldX, formData.hFieldY, formData.hFieldZ]} onChange={handleChange} error={errors.hField} />
       <NumericInput name="temperature" label="Temperature [K]" value={formData.temperature} onChange={handleChange} error={errors.temperature} />

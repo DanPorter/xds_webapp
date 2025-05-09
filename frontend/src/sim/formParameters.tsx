@@ -18,6 +18,18 @@ export const tooltips: {[id: string]: string} = {
     C2v: "Bent or angular symmetry",
 }
 
+export const dq_labels: {[id: string]: string} = {
+  '': '10Dq',
+  '10Dq_i': '10Dq',
+  'Dmu_i': 'Dμ',
+  'Dnu_i': 'Dν',
+  'Dq_i': 'Dq',
+  'Ds_i': 'Ds',
+  'Dt_i': 'Dt',
+  'Dsigma_i': 'Dσ',
+  'Dtau_i': 'Dτ',
+}
+
 export interface FormErrors {
   ion?: string;
   charge?: string;

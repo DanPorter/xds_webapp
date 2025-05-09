@@ -14,8 +14,8 @@ def process_results(ion: str, path: str, Nelec: float, edge: float, Rawout: subp
     """
 
     label = ion + '_XAS'
-    xz = np.loadtxt(os.path.join(path, label + '_iso.spec'), skiprows=5)
-    mcd = np.loadtxt(os.path.join(path, label + '_cd.spec'), skiprows=5)
+    xz = np.loadtxt(os.path.join(path, label + '_iso.spec'), skiprows=5)  # == (xr + xl) / 2
+    mcd = np.loadtxt(os.path.join(path, label + '_cd.spec'), skiprows=5)  # == xr - xl
     xl = np.loadtxt(os.path.join(path, label + '_l.spec'), skiprows=5)
     xr = np.loadtxt(os.path.join(path, label + '_r.spec'), skiprows=5)
     mcd2 = xr.copy()
@@ -74,10 +74,10 @@ def process_results(ion: str, path: str, Nelec: float, edge: float, Rawout: subp
 
     # Sum rules table
     outdic = treat_output(Rawout)
-    Lz_t = float(outdic['L_k'])
-    Sz_t = float(outdic['S_k'])
-    Tz_t = float(outdic['T_k'])
-    Seff_t = float(outdic['S_k']) + float(outdic['T_k'])
+    Lz_t = outdic['L_k']
+    Sz_t = outdic['S_k']
+    Tz_t = outdic['T_k']
+    Seff_t = outdic['S_k'] + outdic['T_k']
 
     table1 = [
         [r'L$$_z$$', r'S$_{eff}$', r'S$_{z}$', r'T$_{z}$'],
@@ -182,7 +182,7 @@ def post_proc_output_only(ion: str, path: str, edge: str):
 
 def treat_output(Rawout: subprocess.CompletedProcess):
     """
-    From the standar output of a Quanty calculation with the XAS_Template,
+    From the standard output of a Quanty calculation with the XAS_Template,
     it extracts the relevant expctation value
 
     Arguments:
@@ -201,14 +201,16 @@ def treat_output(Rawout: subprocess.CompletedProcess):
             rline = iline
 
     Odata = out[rline].split()
-    E = Odata[2]
-    S2 = Odata[3]
-    L2 = Odata[4]
-    J2 = Odata[5]
-    S_k = Odata[6]
-    L_k = Odata[7]
-    J_k = Odata[8]
-    T_k = Odata[9]
-    LdotS = Odata[10]
-    return {'E': E, 'S2': S2, 'L2': L2, 'J2': J2, 'S_k': S_k, 'L_k': L_k, 'J_k': J_k, 'T_k': T_k, 'LdotS': LdotS}
+    values = {
+        'E': float(Odata[2]),
+        'S2': float(Odata[3]),
+        'L2': float(Odata[4]),
+        'J2': float(Odata[5]),
+        'S_k': float(Odata[6]),
+        'L_k': float(Odata[7]),
+        'J_k': float(Odata[8]),
+        'T_k': float(Odata[9]),
+        'LdotS': float(Odata[10])
+    }
+    return values
 
