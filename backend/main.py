@@ -227,7 +227,7 @@ class MeasuredData(BaseModel):
 async def measurement(data: LoadMeasuredData):
     logger.info(f"Finding pairs in files: \n{'\n'.join(data.files)}")
     try:
-        pol_set = find_pairs(*data.files)
+        pol_set = find_pairs(*data.files, background_type=data.background_type)  # load files, check similarity, remove background and find pairs
         logger.info(f"Found {len(pol_set.measurements)} pairs")
         table = pol_set.table()
         data: MeasuredData = {

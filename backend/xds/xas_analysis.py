@@ -9,6 +9,7 @@ import numpy as np
 import h5py
 import hdfmap
 from tabulate import tabulate
+from lmfit.models import LinearModel, QuadraticModel, ExponentialModel, StepModel
 
 from .environment import regex_scan_number
 from .parameters import AVAILABLE_EDGES
@@ -16,7 +17,7 @@ from .plot_models import gen_line_data, gen_plot_props
 
 
 class XASMetadata:
-    cmd = '(cmd|scan_command)'
+    cmd = '(cmd|user_command|scan_command)'
     date = 'start_time'
     pol = 'polarisation?("lh")'
     iddgap = 'iddgap'
@@ -28,7 +29,7 @@ class XASMetadata:
     field_x = 'field_x?(0)'
     field_y = 'field_y?(0)'
     field_z = '(magnet_field|ips_demand_field|field_z?(0))'
-    energy = '(fastEnergy|pgm_energy|energy)'
+    energy = '(fastEnergy|pgm_energy|energye|energyh|energy)'
     monitor = '(C2|ca62sr|mcs16|macr16|mcse16|macj316|mcsh16|macj216)'
     tey = '(C1|ca61sr|mcs17|macr17|mcse17|macj317|mcsh17|macj217)'
     tfy = '(C3|ca63sr|mcs18|macr18|mcse18|macj318|mcsh18|macaj218)'
@@ -178,6 +179,127 @@ def xmcd_table(energy: np.ndarray, average: np.ndarray, difference: np.ndarray,
     return table_string
 
 
+def signal_jump(energy, signal, ev_from_start=5., ev_from_end=None) -> float:
+    """Return signal jump from start to end"""
+    ev_from_end = ev_from_end or ev_from_start
+    ini_signal = np.mean(signal[energy < np.min(energy) + ev_from_start])
+    fnl_signal = np.mean(signal[energy > np.max(energy) - ev_from_end])
+    return fnl_signal - ini_signal
+
+
+def subtract_flat_background(energy, signal, ev_from_start=5.) -> tuple[np.ndarray, np.ndarray]:
+    """Subtract flat background"""
+    bkg = np.mean(signal[energy < np.min(energy) + ev_from_start])
+    return np.subtract(signal, bkg), bkg * np.ones_like(signal)
+
+
+def normalise_background(energy, signal, ev_from_start=5.) -> tuple[np.ndarray, np.ndarray]:
+    """Normalise background to one"""
+    bkg = np.mean(signal[energy < np.min(energy) + ev_from_start])
+    return np.divide(signal, bkg), bkg * np.ones_like(signal)
+
+
+def fit_linear_background(energy, signal, ev_from_start=5.) -> tuple[np.ndarray, np.ndarray]:
+    """Use lmfit to determine sloping background"""
+    model = LinearModel(prefix='bkg_')
+    region = energy < np.min(energy) + ev_from_start
+    en_region = energy[region]
+    sig_region = signal[region]
+    pars = model.guess(sig_region, x=en_region)
+    fit_output = model.fit(sig_region, pars, x=en_region)
+    bkg = fit_output.eval(x=energy)
+    return signal - bkg, bkg
+
+
+def fit_curve_background(energy, signal, ev_from_start=5.) -> tuple[np.ndarray, np.ndarray]:
+    """Use lmfit to determine sloping background"""
+    model = QuadraticModel(prefix='bkg_')
+    # region = (energy < np.min(energy) + ev_from_start) + (energy > np.max(energy) - ev_from_start)
+    region = energy < np.min(energy) + ev_from_start
+    en_region = energy[region]
+    sig_region = signal[region]
+    pars = model.guess(sig_region, x=en_region)
+    fit_output = model.fit(sig_region, pars, x=en_region)
+    bkg = fit_output.eval(x=energy)
+    return signal - bkg, bkg
+
+
+def fit_exp_background(energy, signal, ev_from_start=5.) -> tuple[np.ndarray, np.ndarray]:
+    """Use lmfit to determine sloping background"""
+    model = ExponentialModel(prefix='bkg_')
+    # region = (energy < np.min(energy) + ev_from_start) + (energy > np.max(energy) - ev_from_start)
+    region = energy < np.min(energy) + ev_from_start
+    en_region = energy[region]
+    sig_region = signal[region]
+    pars = model.guess(sig_region, x=en_region)
+    fit_output = model.fit(sig_region, pars, x=en_region)
+    # print('exp background\n:', fit_output.fit_report())
+    bkg = fit_output.eval(x=energy)
+    return signal - bkg, bkg
+
+
+def fit_exp_step(energy, signal, ev_from_start=5., ev_from_end=5.) -> tuple[np.ndarray, np.ndarray]:  # good?
+    """Use lmfit to determine sloping background"""
+    model = ExponentialModel(prefix='bkg_') + StepModel(form='arctan', prefix='jmp_')  # form='linear'
+    region = (energy < np.min(energy) + ev_from_start) + (energy > np.max(energy) - ev_from_start)
+    en_region = energy[region]
+    sig_region = signal[region]
+    # pars = model.guess(sig_region, x=en_region)
+    guess_jump = signal_jump(energy, signal, ev_from_start, ev_from_end)
+    pars = model.make_params(
+        bkg_amplitude=np.max(sig_region),
+        bkg_decay=100.0,
+        jmp_amplitude=dict(value=guess_jump, min=0),
+        jmp_center=energy[np.argmax(signal)],  # np.mean(energy),
+        jmp_sigma=dict(value=1, min=0),
+    )
+    fit_output = model.fit(sig_region, pars, x=en_region)
+    bkg = fit_output.eval(x=energy)
+    jump = fit_output.params['jmp_amplitude']
+    # print('fit_exp_step:\n', fit_output.fit_report())
+    # print(jump)
+    return (signal - bkg) / jump, bkg / jump
+
+
+def i06_norm(energy, signal) -> tuple[np.ndarray, np.ndarray]:
+    """I06 norm and post_edge_norm option"""
+    sig = 1.0 * signal
+    sig /= sig[energy < energy[0] + 5].mean()  # nomalise by the average of a range of energy
+    jump = sig[energy > energy[-1] - 5].mean() - sig[energy < energy[0] + 5].mean()
+
+    print(jump)
+    print(sig[energy < energy[0] + 5].mean())
+    sig -= sig[energy < energy[0] + 5].mean()  # - 1
+    jump2 = sig[energy > energy[-1] - 5].mean()
+    print(jump2)
+    sig /= jump2
+    return sig, jump2 * np.ones_like(sig)
+
+
+def fit_bkg_then_norm_to_peak(energy, signal, ev_from_start=5., ev_from_end=5.) -> tuple[np.ndarray, np.ndarray]:  # good?
+    """Fit the background then normalise the post-edge to 1"""
+    fit_signal, bkg = fit_exp_background(energy, signal, ev_from_start)
+    peak = np.max(abs(fit_signal))
+    return fit_signal / peak, bkg / peak
+
+
+def fit_bkg_then_norm_to_jump(energy, signal, ev_from_start=5., ev_from_end=5.) -> tuple[np.ndarray, np.ndarray]:  # good?
+    """Fit the background then normalise the post-edge to 1"""
+    fit_signal, bkg = fit_exp_background(energy, signal, ev_from_start)
+    jump = signal_jump(energy, fit_signal, ev_from_start, ev_from_end)
+    return fit_signal / abs(jump), bkg / abs(jump)
+
+
+BACKGROUND_FUNCTIONS = {
+    # description: (en, sig, *args, **kwargs) -> spectra, bkg
+    'flat': subtract_flat_background,
+    'norm': normalise_background,
+    'linear': fit_linear_background,
+    'curve': fit_curve_background,
+    'exp': fit_exp_background,
+}
+
+
 class XASMeasurement:
     def __init__(self, filename: str, nexus_map: hdfmap.NexusMap):
         self.filename = filename
@@ -209,6 +331,9 @@ class XASMeasurement:
         
         self.tey = self.tey / self.monitor
         self.tfy = self.tfy / self.monitor
+        self.tey_background = np.zeros_like(self.tey)
+        self.tfy_background = np.zeros_like(self.tfy)
+        self.process = 'raw'
         self.label = f"{self.scan_number}: {self.polarisation}"
     
     def __repr__(self):
@@ -218,8 +343,47 @@ class XASMeasurement:
         """Determine the element and edge from the energy axis of the spectra."""
         return determine_element(self.energy.mean())
     
+    def remove_background(self, name='flat', *args, **kwargs):
+        self.tey, self.tey_background = BACKGROUND_FUNCTIONS[name](self.energy, self.tey, *args, **kwargs)
+        self.tfy, self.tfy_background = BACKGROUND_FUNCTIONS[name](self.energy, self.tfy, *args, **kwargs)
+        self.process = f"{self.process} - {name}"
+
+    def norm_to_peak(self):
+        peak_tey =  np.max(abs(self.tey))
+        peak_tfy =  np.max(abs(self.tfy))
+        self.tey = self.tey / peak_tey
+        self.tfy = self.tfy / peak_tfy
+        self.tey_background = self.tey_background / peak_tey
+        self.tfy_background = self.tfy_background / peak_tfy
+        self.process = f"({self.process}) / peak"
+        
+
+    def norm_to_jump(self, ev_from_start=5., ev_from_end=None):
+        jump_tey = signal_jump(self.energy, self.tey, ev_from_start, ev_from_end)
+        jump_tfy = signal_jump(self.energy, self.tfy, ev_from_start, ev_from_end)
+        self.tey = self.tey / jump_tey
+        self.tfy = self.tfy / jump_tfy
+        self.tey_background = self.tey_background / jump_tey
+        self.tfy_background = self.tfy_background / jump_tfy
+        self.process = f"({self.process}) / jump"
+    
+    def auto_norm(self, name='exp', ev_from_start=5., ev_from_end=None):
+        """
+        Automatically normalise the spectra using the given method.
+        The method is chosen based on the energy range of the spectra.
+        """
+        # remove flat background
+        self.remove_background('flat', ev_from_start=ev_from_start, ev_from_end=ev_from_end)
+        # remove curved background
+        self.remove_background(name, ev_from_start=ev_from_start, ev_from_end=ev_from_end)
+        # normalise to jump
+        self.norm_to_jump(ev_from_start=ev_from_start, ev_from_end=ev_from_end)
+    
     def plot(self):
         return gen_line_data(self.energy, self.tey, label=self.label)
+    
+    def plot_background(self):
+        return gen_line_data(self.energy, self.tey_background, fmt=':', label=f"{self.label} background", colour='black')
 
 
 class PolarisationPair:
@@ -254,7 +418,13 @@ class PolarisationPair:
         )
     
     def output(self):
-        lines = self.measurement1.plot(), self.measurement2.plot(), self.plot()
+        lines = (
+            self.measurement1.plot(), 
+            self.measurement1.plot_background(),
+            self.measurement2.plot(), 
+            self.measurement2.plot_background(),
+            self.plot()
+        )
         return gen_plot_props(
             self.title,
             'Energy (eV)',
@@ -377,7 +547,7 @@ def find_similar_measurements(*filenames: str, energy_tol=1., temp_tol=0.1, fiel
     return similar
 
 
-def find_pairs(*filenames: str) -> PolarisationSet:
+def find_pairs(*filenames: str, background_type: str | None = None) -> PolarisationSet:
     """
     returns pairs of xas measurements in paired polarisations (cl,cr or lh,lv etc)
     """
@@ -397,6 +567,13 @@ def find_pairs(*filenames: str) -> PolarisationSet:
     ]
     if len(pol_indexes) < 2:
         raise ValueError(f"Not enough polarisations! {set(polarisations)}")
+    if background_type:
+        print('Removing background')
+        for m in measurements:
+            m.remove_background('flat')
+            if background_type != 'flat':
+                m.remove_background(background_type)
+            # m.norm_to_jump(ev_from_start=5., ev_from_end=5.)
     print(f"Pairing Polarisations: {polarisations[pol_indexes[0][0]]} and {polarisations[pol_indexes[1][0]]}")
     pairs = [
         PolarisationPair(measurements[i1], measurements[i2])

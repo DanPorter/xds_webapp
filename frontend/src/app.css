@@ -3,8 +3,10 @@
   border: 1px solid #ddd;
   border-radius: 5px;
   overflow: hidden;
-  height: 100vw;
+  height: auto;
   width: 100vw;
+  min-height: 100vh;
+  margin-bottom: 50px;
 }
 
 .banner {

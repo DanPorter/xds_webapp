@@ -11,7 +11,6 @@ import OpenNotebook from './jupyterRunner';
 
 import { config } from "./api";
 import { LinePlotProps } from '@diamondlightsource/davidia';
-import { ScanFiles } from './measurement/getData';
 
 export interface BeamlineConfig {
   beamline: string;
@@ -47,15 +46,14 @@ export interface BeamlineConfig {
 export interface MeasurementInputForm {
   selectedInstrument: string;
   selectedVisit: string;
-  visitPath: string;
   instruments: string[];
   visits: string[];
-  visitFiles: ScanFiles;
   rangeStart: number | null;
   rangeEnd: number | null;
   filePath: string;
   fileSpec: string;
   selectedNumbers: number[];
+  background_type: string;
 }
 
 export interface SimulationInputForm {
@@ -122,15 +120,14 @@ function App() {
   const measurementForm: MeasurementInputForm = {
     selectedInstrument: '',
     selectedVisit: '',
-    visitPath: '',
     instruments: [],
     visits: [],
-    visitFiles: { first_number: 0, last_number: 0, file_spec: '' },
     rangeStart: null,
     rangeEnd: null,
     filePath: '',
     fileSpec: '',
-    selectedNumbers: []
+    selectedNumbers: [],
+    background_type: 'exp',
   };
   const simulationForm: SimulationInputForm = {
     ion: '',
