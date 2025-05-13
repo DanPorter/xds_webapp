@@ -25,14 +25,15 @@ from xds.xas_analysis import find_pairs
 jupyter_token = secrets.token_hex(32)
 
 # Start Jupyter Notebook server
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup event
-    Popen(["jupyter", "notebook", "--no-browser", "--allow-root", f"--NotebookApp.token={jupyter_token}"])
-    yield
-    # Shutdown event (if needed)
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Startup event
+#     Popen(["jupyter", "notebook", "--no-browser", "--allow-root", f"--NotebookApp.token={jupyter_token}"])
+#     yield
+#     # Shutdown event (if needed)
 
-app = FastAPI(lifespan=lifespan)
+# app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # app = FastAPI()
 logging.basicConfig()

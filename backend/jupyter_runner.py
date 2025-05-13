@@ -18,14 +18,14 @@ jupyter_token = secrets.token_hex(32)
 # Start Jupyter Notebook server
 from contextlib import asynccontextmanager
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup event
-    Popen(["jupyter", "notebook", "--no-browser", "--allow-root", f"--NotebookApp.token={jupyter_token}"])
-    yield
-    # Shutdown event (if needed)
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Startup event
+#     Popen(["jupyter", "notebook", "--no-browser", "--allow-root", f"--NotebookApp.token={jupyter_token}"])
+#     yield
+#     # Shutdown event (if needed)
 
-app = FastAPI(lifespan=lifespan)
+# app = FastAPI(lifespan=lifespan)
 
 @app.post("/start-notebook/")
 async def start_notebook():

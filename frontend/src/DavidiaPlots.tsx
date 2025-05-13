@@ -12,8 +12,8 @@ import {
 
 
 export function ExampleData() {
-  const x = ndarray(new Float32Array([1, 2, 3, 4, 5])) as NDT;
-  const y = ndarray(new Float32Array([10, 20, 30, 40, 50])) as NDT;
+  const x = ndarray(new Float32Array([])) as NDT;
+  const y = ndarray(new Float32Array([])) as NDT;
   const lineProps = {
     plotConfig: {
       xLabel: 'x label',
