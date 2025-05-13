@@ -40,6 +40,25 @@ def check_metadata_paths(hdf_obj: h5py.File, hdf_map: hdfmap.NexusMap) -> dict[s
     return {k: hdf_map.eval(hdf_obj, f"_{v}") for k, v in vars(XASMetadata).items() if isinstance(v, str)}
 
 
+def gen_metadata_str(filename: str) -> str:
+    """Return metadata string for Nexus file"""
+    meta_str = (
+        "{filename}\n" +
+        "{" + XASMetadata.date + "}\n" + 
+        "{" + XASMetadata.cmd + "}\n" + 
+        "E = {np.mean(" + XASMetadata.energy + "):.2f} eV\n" + 
+        "T = {" + XASMetadata.temp + ":.2f} K\n" + 
+        "B = {np.sqrt(%s**2 + %s**2 + %s**2)} T\n" % (XASMetadata.field_x, XASMetadata.field_y, XASMetadata.field_z) + 
+        "Pol = {" + XASMetadata.pol + "}" 
+    )
+    hdf_map = hdfmap.create_nexus_map(filename)
+    try:
+        meta = hdf_map.format_hdf(hdf_map.load_hdf(), meta_str)
+    except Exception as e:
+        meta = str(e)
+    return meta
+
+
 def average_energy_scans(*args: tuple[np.ndarray]):
     """Return the minimum range covered by all input arguments"""
     min_energy = np.max([np.min(en) for en in args])

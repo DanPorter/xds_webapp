@@ -43,6 +43,10 @@ export interface BeamlineConfig {
   };
 };
 
+export interface MetaData {
+  [key: number]: string
+}
+
 export interface MeasurementInputForm {
   selectedInstrument: string;
   selectedVisit: string;
@@ -53,6 +57,7 @@ export interface MeasurementInputForm {
   filePath: string;
   fileSpec: string;
   selectedNumbers: number[];
+  fileMetadata: MetaData;
   background_type: string;
 }
 
@@ -127,6 +132,7 @@ function App() {
     filePath: '',
     fileSpec: '',
     selectedNumbers: [],
+    fileMetadata: {},
     background_type: 'exp',
   };
   const simulationForm: SimulationInputForm = {

@@ -4,8 +4,8 @@ import { join } from 'path-browserify';
 import { decode } from 'messagepack';
 import { LinePlotProps } from '@diamondlightsource/davidia';
 
-import { scanfiles, measurement } from '../api';
-import { MeasurementProps, MeasurementInputForm } from '../App';
+import { scanfiles, measurement, apiMetadata } from '../api';
+import { MeasurementProps, MetaData } from '../App';
 
 export interface ScanFiles {
   first_number: number;
@@ -34,7 +34,7 @@ const fetchScanFiles = async ( visitPath: string ): Promise<ScanFiles> => {
     const result = await response.json() as ScanFiles;
     return result;
   } catch (error) {
-    console.error('Error fetching instrument config data:', error);
+    console.error('Error fetching scan files:', error);
     throw error;
   }
 };
@@ -42,14 +42,13 @@ const fetchScanFiles = async ( visitPath: string ): Promise<ScanFiles> => {
 /**
  * Generates a list of file paths based on the selected numbers and file specifications.
  *
- * @param {Object} params - The parameters for generating file paths.
- * @param {number[]} params.selectedNumbers - The selected numbers for generating file paths.
- * @param {string} params.filePath - The base file path.
- * @param {string} params.fileSpec - The file specification with a placeholder for the number.
+ * @param {number[]} selectedNumbers - The selected numbers for generating file paths.
+ * @param {string} filePath - The base file path.
+ * @param {string} fileSpec - The file specification with a placeholder for the number.
  * @returns {string[]} An array of generated file paths.
  * @throws Will throw an error if the file path or specification is invalid.
  */
-function generateFileList( { selectedNumbers, filePath, fileSpec }: MeasurementInputForm ): string[] {
+function generateFileList( selectedNumbers: number[], filePath: string, fileSpec: string ): string[] {
   const files: string[] = [];
   for (let i = 0; i < selectedNumbers.length; i++) {
     files.push(
@@ -61,6 +60,48 @@ function generateFileList( { selectedNumbers, filePath, fileSpec }: MeasurementI
   }
   return files;
 }
+
+/**
+ * Fetches metadata strings from input data files and sets inputForm.fileMetadata
+ *
+ * @param {Object} params - The parameters for fetching polarization pairs.
+ * @param {Object} params.inputForm - The input form data.
+ * @param {Object} params.setInputForm - setter for input form data.
+ * @throws Will throw an error if the fetch operation fails.
+ */
+const fetchFileMetadata = async ({ inputForm, setInputForm }: MeasurementProps) => {
+  console.log('Fetching File Metadata', inputForm);
+  const { filePath, fileSpec, selectedNumbers } = inputForm
+  // don't load files already looked at
+  const newNumbers = selectedNumbers.filter((number) => !(number in inputForm.fileMetadata));
+  if (newNumbers.length === 0) return;
+
+  try {
+    const files = generateFileList(newNumbers, filePath, fileSpec);
+    console.log('Files:', files);
+    const fileObj = Object.fromEntries(newNumbers.map((number, index) => [number, files[index]]))
+    console.log('FileObj:', fileObj);
+
+    const response = await fetch(apiMetadata, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({'files': fileObj}),
+    });
+    const result = await response.json() as MetaData;
+    setInputForm({
+      ...inputForm,
+      fileMetadata: {
+        ...inputForm.fileMetadata,
+        ...result
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching metadata:', error);
+    throw error;
+  }
+};
 
 
 interface MeasuredData {
@@ -90,10 +131,11 @@ const fetchMeasurement = async (
 ) => {
   e.preventDefault();
   console.log('Submiting Measurement', inputForm);
+  const { filePath, fileSpec, selectedNumbers, background_type } = inputForm
   // if (!validate(formData, setErrors)) return;
 
   try {
-    const files = generateFileList(inputForm);
+    const files = generateFileList(selectedNumbers, filePath, fileSpec);
     console.log('Files:', files);
 
     const response = await fetch(measurement, {
@@ -101,7 +143,7 @@ const fetchMeasurement = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({files: files, background_type: inputForm.background_type}),
+      body: JSON.stringify({files: files, background_type: background_type}),
     });
     const buffer = await response.arrayBuffer(); 
     const data = await decode(new Uint8Array(buffer)) as MeasuredData; 
@@ -126,4 +168,4 @@ const fetchMeasurement = async (
   }
 };
 
-export { fetchScanFiles, fetchMeasurement };
+export { fetchScanFiles, fetchFileMetadata, fetchMeasurement };

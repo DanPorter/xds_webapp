@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { MeasurementProps } from '../App';
+import { fetchFileMetadata } from './getData';
 
-const NumberRangeSelector: React.FC<MeasurementProps> = ( {inputForm, setInputForm} ) => {
-  const { rangeStart, rangeEnd, selectedNumbers } = inputForm
+const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => {
+  const {inputForm, setInputForm} = measurementProps
+  const { rangeStart, rangeEnd, selectedNumbers, fileMetadata } = inputForm
 
   const handleRemove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, number: number) => {
     event.preventDefault(); // Prevent default form submission
@@ -47,6 +49,11 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( {inputForm, setInputFo
     }
   };
 
+  useEffect(() => {
+    // update Tooltips for metadata
+    fetchFileMetadata(measurementProps)
+  }, [selectedNumbers]);
+
   return (
     <div className="number-range-selector">
       <div className="number-inputs">
@@ -70,6 +77,7 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( {inputForm, setInputFo
           <button
             key={number}
             type="button"
+            title={fileMetadata[number]}
             className="selected-number-button"
             onClick={(e) => handleRemove(e, number)}
           >

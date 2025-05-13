@@ -19,7 +19,7 @@ import requests
 from xds import gen_simulation
 from xds.environment import AVAILABLE_EXPIDS, get_path_filespec, get_beamline, get_quanty_path
 from xds.parameters import AVAILABLE_SYMMETRIES, AVAILABLE_DQ
-from xds.xas_analysis import find_pairs, determine_element
+from xds.xas_analysis import find_pairs, gen_metadata_str
 from xds.plot_models import lineProps
 
 
@@ -221,13 +221,12 @@ class MeasuredData(BaseModel):
     temperature: float
 
 
-
 # @app.post("/api/measurement", response_model=MeasuredData)
 @app.post("/api/measurement")
-async def measurement(data: LoadMeasuredData):
-    logger.info(f"Finding pairs in files: \n{'\n'.join(data.files)}")
+async def measurement(indata: LoadMeasuredData):
+    logger.info(f"Finding pairs in files: \n{'\n'.join(indata.files)}")
     try:
-        pol_set = find_pairs(*data.files, background_type=data.background_type)  # load files, check similarity, remove background and find pairs
+        pol_set = find_pairs(*indata.files, background_type=indata.background_type)  # load files, check similarity, remove background and find pairs
         logger.info(f"Found {len(pol_set.measurements)} pairs")
         table = pol_set.table()
         data: MeasuredData = {
@@ -250,6 +249,19 @@ async def measurement(data: LoadMeasuredData):
         }
     packed_data = msgpack.packb(data, use_bin_type=True, default=encoder)
     return Response(content=packed_data, media_type="application/x-msgpack")
+
+
+class LoadMetadata(BaseModel):
+    files: dict[int, str]
+
+@app.post("/api/metadata")
+async def metadata(indata: LoadMetadata):
+    logger.info(f"Loading metadata: \n{indata.files}")
+    meta_strings = {
+        scn: gen_metadata_str(filename)
+        for scn, filename in indata.files.items()
+    }
+    return meta_strings
 
 
 INDEX = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist'))
