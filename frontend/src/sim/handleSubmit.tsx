@@ -47,7 +47,7 @@ export const handleSubmit = async (
       })
     } else {
       setPlots([]);
-      setTable('');
+      setTable(data.table);
     }
   } catch (error) {
     console.error('Error:', error);
