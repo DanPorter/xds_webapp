@@ -1,8 +1,5 @@
 
 
-// const QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe';//'Quanty';
-const QUANTY_PATH = 'Quanty';
-
 export const tooltips: {[id: string]: string} = {
     ion: 'Atomic element',
     charge: 'ionic charge (integer)',
@@ -20,36 +17,16 @@ export const tooltips: {[id: string]: string} = {
     C2v: "Bent or angular symmetry",
 }
 
-export interface FormData {
-  ion: string;
-  charge: string;
-  symmetry: string;
-  beta: number;
-  tenDq: number;
-  bFieldX: number;
-  bFieldY: number;
-  bFieldZ: number;
-  hFieldX: number;
-  hFieldY: number;
-  hFieldZ: number;
-  temperature: number;
-  path: string;
-}
-
-export const defaults: FormData = {
-  ion: '',
-  charge: '',
-  symmetry: '',
-  beta: 0.8,
-  tenDq: 1.0,
-  bFieldX: 0.0,
-  bFieldY: 0.0,
-  bFieldZ: 1.0,
-  hFieldX: 0.0,
-  hFieldY: 0.0,
-  hFieldZ: 0.0,
-  temperature: 1.0,
-  path: QUANTY_PATH,
+export const dq_labels: {[id: string]: string} = {
+  '': '10Dq',
+  '10Dq_i': '10Dq',
+  'Dmu_i': 'Dμ',
+  'Dnu_i': 'Dν',
+  'Dq_i': 'Dq',
+  'Ds_i': 'Ds',
+  'Dt_i': 'Dt',
+  'Dsigma_i': 'Dσ',
+  'Dtau_i': 'Dτ',
 }
 
 export interface FormErrors {

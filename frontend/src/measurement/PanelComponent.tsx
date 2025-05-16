@@ -1,31 +1,31 @@
 // Panel component in App.tsx
 
-import { useState } from 'react';
-import { LinePlotProps } from '@diamondlightsource/davidia';
 import { DvDPlots } from '../DavidiaPlots';
 import MeasurementInputs from './FormComponent';
-import { Comparison } from '../App';
+import { MeasurementProps } from '../App';
+import MarkdownPreview from '../MarkdownTextBox';
 
-
-interface MeasurementPanelProps {
-  comparison: Comparison;
-  setComparison: React.Dispatch<React.SetStateAction<Comparison>>;
-}
 
 export default
-function MeasurementPanel({ comparison, setComparison }: MeasurementPanelProps) {
-
-  const [polPairPlots, setPolPairPlots] = useState<LinePlotProps[]>([]);
-
+function MeasurementPanel(props: MeasurementProps) {
   return (
     <div className='my-window-grid'>
         <div className='my-left-panel'>
-          <MeasurementInputs {...{setPolPairPlots, comparison, setComparison}} />
+          <MeasurementInputs {...props} />
         </div>
+        
         <div className='my-right-panel'>
-          {polPairPlots.map((plot, i) => (
-            <DvDPlots key={i} {...plot} />
+          <h3>Measurements</h3>
+          {props.plots.map((plot, i) => (
+            <DvDPlots key={i} lineProps={plot} />
           ))}
+          <h3>Average</h3>
+          { props.comparison.experiment.lineData.length > 0 &&
+            <DvDPlots lineProps={props.comparison.experiment} />
+          }
+          <div style={{ marginTop: '10px', border: '1px solid #ddd', padding: '10px' }}>
+            <MarkdownPreview markdown={props.table ? props.table : ''} />
+          </div>
         </div>
     </div>
   )

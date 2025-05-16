@@ -1,45 +1,58 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
-import { MeasurementForm } from './FormComponent';
+import { MeasurementProps } from '../App';
+import { fetchFileMetadata } from './getData';
 
-interface NumberRangeSelectorProps {
-  formData: MeasurementForm;
-  setFormData: React.Dispatch<React.SetStateAction<MeasurementForm>>;
-}
+const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => {
+  const {inputForm, setInputForm} = measurementProps
+  const { rangeStart, rangeEnd, selectedNumbers, fileMetadata } = inputForm
 
-const NumberRangeSelector: React.FC<NumberRangeSelectorProps> = ({ formData, setFormData }) => {
-
-  const rangeStart = formData.rangeStart;
-  const rangeEnd = formData.rangeEnd;
-  const selectedNumbers = formData.selectedNumbers;
-  const setRangeStart = (start: number) => {
-    setFormData({ ...formData, rangeStart: start });
-  }
-  const setRangeEnd = (end: number) => {
-    setFormData({ ...formData, rangeEnd: end });
-  }
-  const setSelectedNumbers = (numbers: number[]) => {
-    setFormData({ ...formData, selectedNumbers: numbers });
-  }
-
-  const handleRemove = (number: number) => {
-    setSelectedNumbers(formData.selectedNumbers.filter((n) => n !== number));
-    // setFormData({ ...formData, formData.selectedNumbers.filter((n) => n !== number));
+  const handleRemove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, number: number) => {
+    event.preventDefault(); // Prevent default form submission
+    setInputForm({
+      ...inputForm,
+      selectedNumbers: inputForm.selectedNumbers.filter((n) => n !== number)
+    })
   };
 
-  const removeAll = () => {
-    // setFormData({ ...formData, selectedNumbers: [] });
-    setSelectedNumbers([]);
+  const removeAll = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    event.preventDefault();
+    setInputForm({ ...inputForm, selectedNumbers: [] });
   };
 
-  const handleRangeSelect = () => {
+  const handleRangeStart = (event: React.ChangeEvent<HTMLInputElement> ) => {
+    const value = Number(event.target.value)
+    setInputForm({
+      ...inputForm,
+      rangeStart: value
+    })
+  }
+
+  const handleRangeEnd = (event: React.ChangeEvent<HTMLInputElement> ) => {
+    const value = Number(event.target.value)
+    setInputForm({
+      ...inputForm,
+      rangeEnd: value
+    })
+  }
+
+  const handleRangeSelect = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    event.preventDefault();
     if (rangeStart !== null && rangeEnd !== null) {
       const range = Array.from({ length: rangeEnd - rangeStart + 1 }, (_, i) => rangeStart + i);
       if ( selectedNumbers.length + range.length  < 20 ) {
-        setSelectedNumbers([...selectedNumbers, ...range]);
+        setInputForm({
+          ...inputForm,
+          selectedNumbers: [...new Set([...selectedNumbers, ...range])],  // remove duplicates
+        });
       }  
     }
   };
+
+  useEffect(() => {
+    // update Tooltips for metadata
+    fetchFileMetadata(measurementProps)
+  }, [selectedNumbers]);
 
   return (
     <div className="number-range-selector">
@@ -48,23 +61,25 @@ const NumberRangeSelector: React.FC<NumberRangeSelectorProps> = ({ formData, set
           type="number"
           placeholder="Start"
           value={rangeStart ?? ''}
-          onChange={(e) => setRangeStart(Number(e.target.value))}
+          onChange={handleRangeStart}
         />
         <input
           type="number"
           placeholder="End"
           value={rangeEnd ?? ''}
-          onChange={(e) => setRangeEnd(Number(e.target.value))}
+          onChange={handleRangeEnd}
         />
-        <button onClick={handleRangeSelect}>Select Range</button>
-        <button onClick={removeAll}>Remove All</button>
+        <button type="button" onClick={(e) => handleRangeSelect(e)}>Select Range</button>
+        <button type="button" onClick={(e) => removeAll(e)}>Remove All</button>
       </div>
       <div className="selected-numbers">
         {selectedNumbers.map((number) => (
           <button
             key={number}
+            type="button"
+            title={fileMetadata[number]}
             className="selected-number-button"
-            onClick={() => handleRemove(number)}
+            onClick={(e) => handleRemove(e, number)}
           >
             {number} &times;
           </button>

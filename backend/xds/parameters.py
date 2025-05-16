@@ -145,3 +145,111 @@ AVAILABLE_SYMMETRIES = {
         ch: list(charge['symmetries'].keys()) for ch, charge in XRAY_DATA['elements'][el]['charges'].items()
     } for el in ATOMIC_PARAMETERS
 }
+
+# Determine which edges are available for each element
+AVAILABLE_EDGES = {
+    el: next(
+        charge['symmetries']['Oh']['experiments']['XAS']['edges']['L2,3 (2p)']['axes'][0][4] 
+        for charge in XRAY_DATA['elements'][el]['charges'].values()
+    )
+    for el in ATOMIC_PARAMETERS
+}
+
+
+def get_configurations(element: str, charge: str) -> tuple[str, str]:
+    """
+    Get atomic configurations for a given element and charge.
+
+    Args:
+        element (str): Element symbol.
+        charge (str): Charge state.
+
+    Returns:
+        dict: Atomic configurations.
+    """
+    Nelec = ATOMIC_PARAMETERS[element]['Nelec']
+    if str(int(charge[0]) - 2) != 0:
+        conf = '3d' + str(Nelec - int(charge[0]) + 2)
+        conf_xas = '2p5,3d' + str(Nelec - int(charge[0]) + 2 + 1)
+    else:
+        conf = '3d' + str(Nelec)
+        conf_xas = '2p5,3d' + str(Nelec + 1)
+    return conf, conf_xas
+
+
+# Dq values for each symmetry
+"""
+Oh
+    10Dq -> 10Dq(3d)
+D3h
+    Dmu -> Dμ(3d)
+    Dnu -> Dν(3d)
+D4h
+    Dq -> Dq(3d)
+    Ds -> Ds(3d)
+    Dt -> Dt(3d)
+Td
+    Dq -> Dq(3d)
+C3v
+    Dq -> Dq(3d)
+    Ds -> Ds(3d)
+    Dtau -> Dτ(3d)
+"""
+# XRAY_DATA['elements'][element]['charges'][charge]['configurations'][conf]['terms']
+#  ['Crystal Field']['symmetries'][symmetry]['parameters']['variable']
+DQ_STRINGS = {
+    # xray_data label: input label
+    '10Dq(3d)': '10Dq',
+    'Dμ(3d)': 'Dmu',
+    'Dν(3d)': 'Dnu',
+    'Dq(3d)': 'Dq',
+    'Ds(3d)': 'Ds',
+    'Dt(3d)': 'Dt',
+    'Dσ(3d)': 'Dsigma',
+    'Dτ(3d)': 'Dtau',
+}
+DQ_CONVERT = {
+    # input label: xray_data label
+    DQ_STRINGS[k]: k for k in DQ_STRINGS
+}
+
+
+def get_Dq_values(element: str, charge: str, symmetry: str) -> dict[str, dict[str, float]]:
+    """
+    Get Dq values for a given element, charge and symmetry.
+
+    Args:
+        element (str): Element symbol, e.g. 'Cu'.
+        charge (str): Charge state, e.g. '2+'.
+        symmetry (str): Symmetry. ['Oh', 'Td', 'D4h', 'D3d', 'C4v', 'C3v']
+
+    Returns:
+        dict: Dq values for the given element, charge and symmetry as dict.
+        Dq = {
+            'initial': {'D?': value, ...},
+            'final': {'D?': value, ...}
+        }
+    """
+    conf, conf_xas = get_configurations(element, charge)
+    confs = XRAY_DATA['elements'][element]['charges'][charge]['configurations']
+    ini_parameters = confs[conf]['terms']['Crystal Field']['symmetries'][symmetry]['parameters']['variable']
+    fnl_parameters = confs[conf_xas]['terms']['Crystal Field']['symmetries'][symmetry]['parameters']['variable']
+    parameters = {
+        'initial': {
+            DQ_STRINGS[k] + '_i': ini_parameters[k] for k in ini_parameters
+        },
+        'final': {
+            DQ_STRINGS[k] + '_f': fnl_parameters[k] for k in fnl_parameters
+        }
+    }
+    return parameters
+
+
+# Determine Dq values for each symmetry at each charge state for each element
+AVAILABLE_DQ = {
+    el: {
+        ch: {
+            sym: get_Dq_values(el, ch, sym) for sym in charge['symmetries']
+        } for ch, charge in XRAY_DATA['elements'][el]['charges'].items()
+    } for el in ATOMIC_PARAMETERS
+}
