@@ -1,6 +1,5 @@
 
 
-
 export const tooltips: {[id: string]: string} = {
     ion: 'Atomic element',
     charge: 'ionic charge (integer)',
