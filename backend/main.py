@@ -123,10 +123,14 @@ async def get_element():
 
 @app.get("/api/config")
 async def get_element():
+    try:
+        quanty_path = get_quanty_path()
+    except OSError:
+        quanty_path = 'QUANTY NOT AVAILABLE'
     return {
         'beamline': get_beamline(),
         'visits': AVAILABLE_EXPIDS,
-        'quanty_path': get_quanty_path(),
+        'quanty_path': quanty_path,
         'available_dq_values': AVAILABLE_DQ,
     }
 
