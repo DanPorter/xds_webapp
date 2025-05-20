@@ -10,6 +10,11 @@ dependencies = [
   "numpy",
   "tabulate",
   "msgpack",
+  "nest_asyncio",
+  "requests",
+  "jupyter",
+  "ipython",
+  "lmfit",
 ]
 requires-python = ">=3.10"
 authors = [

@@ -17,6 +17,9 @@ importers:
       '@types/cwise':
         specifier: ^1.0.6
         version: 1.0.6
+      '@types/ndarray-ops':
+        specifier: ^1.2.7
+        version: 1.2.7
       '@types/path-browserify':
         specifier: ^1.0.3
         version: 1.0.3
@@ -35,6 +38,9 @@ importers:
       ndarray:
         specifier: ^1.0.19
         version: 1.0.19
+      ndarray-ops:
+        specifier: ^1.2.2
+        version: 1.2.2
       path-browserify:
         specifier: ^1.0.1
         version: 1.0.1
@@ -783,6 +789,9 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/ndarray-ops@1.2.7':
+    resolution: {integrity: sha512-dQKT1Kfpw83LhzuJp6N7nO03m8Bjv84E1cew3poHK5DgojCXppJPLONQafVzOK3gQNW5sZfjRQgOZG2aSZdQJg==}
 
   '@types/ndarray@1.0.14':
     resolution: {integrity: sha512-oANmFZMnFQvb219SSBIhI1Ih/r4CvHDOzkWyJS/XRqkMrGH5/kaPSA1hQhdIBzouaE+5KpE/f5ylI9cujmckQg==}
@@ -3364,6 +3373,10 @@ snapshots:
       '@types/unist': 3.0.3
 
   '@types/ms@2.1.0': {}
+
+  '@types/ndarray-ops@1.2.7':
+    dependencies:
+      '@types/ndarray': 1.0.14
 
   '@types/ndarray@1.0.14': {}
 

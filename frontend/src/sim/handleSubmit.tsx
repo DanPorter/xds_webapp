@@ -1,12 +1,11 @@
 import { LinePlotProps } from '@diamondlightsource/davidia';
-import { FormData, FormErrors } from './formParameters';
+import { FormErrors } from './formParameters';
 import { validate } from './validateForm';
 
 import { decode } from 'messagepack';
-import { ExampleData } from '../DavidiaPlots';
 // import { decode } from '@msgpack/msgpack';
-import { api } from '../api';
-import { Comparison } from '../App';
+import { simulation } from '../api';
+import { SimulationProps } from '../App';
 
 
 interface SimulationData {
@@ -18,50 +17,37 @@ interface SimulationData {
 
 export const handleSubmit = async (
   e: React.FormEvent,
-  formData: FormData,
-  tableSet: React.Dispatch<React.SetStateAction<string>>,
-  plotSet1: React.Dispatch<React.SetStateAction<LinePlotProps>>,
-  plotSet2: React.Dispatch<React.SetStateAction<LinePlotProps>>,
-  setErrors: React.Dispatch<React.SetStateAction<FormErrors>>,
-  comparison: Comparison,
-  setComparison: React.Dispatch<React.SetStateAction<Comparison>>,
+  props: SimulationProps,
+  setErrors: React.Dispatch<React.SetStateAction<FormErrors>>
 ) => {
   e.preventDefault();
-  console.log('Submit', formData);
-  if (!validate(formData, setErrors)) return;
+  const { inputForm, setPlots, setTable, setComparison, comparison } = props;
+  console.log('Simulation Submit', inputForm);
+  if (!validate(inputForm, setErrors)) return;
 
   try {
-    const response = await fetch(api + '/submit', {
+    const response = await fetch(simulation, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(inputForm),
     });
     // const data = await response.json() as Data; // 404 kB
     const buffer = await response.arrayBuffer(); // 187 kB - ~half size of using unseralized JSON
     const data = await decode(new Uint8Array(buffer)) as SimulationData;
     console.log('Response:', data.message);
-    tableSet(data.table);
     if ('lineData' in data.plot1) {
-      plotSet1(data.plot1);
-      plotSet2(data.plot2);
+      setPlots([data.plot1, data.plot2]);
+      setTable(data.table);
       setComparison({
         ...comparison, 
-        xasLines: {
-          ...comparison.xasLines,
-          simulationPol1: data.plot1.lineData[0], 
-          simulationPol2: data.plot1.lineData[1],
-        }, 
-        diffLines: {
-          ...comparison.diffLines,
-          simulation: data.plot2.lineData[0],
-        }, 
+        simulation: data.plot2, 
         table: data.table
       })
     } else {
-      plotSet1(ExampleData());
-      plotSet2(ExampleData());
+      setPlots([]);
+      setTable(data.table);
     }
   } catch (error) {
     console.error('Error:', error);

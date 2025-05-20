@@ -5,6 +5,7 @@ Check environment variables and file system
 import os
 import re
 import subprocess
+import tempfile
 from datetime import datetime
 
 # environment variables on beamline computers
@@ -12,8 +13,17 @@ BEAMLINE = 'BEAMLINE'
 USER = ['USER', 'USERNAME']
 DLS = '/dls'
 MMG_BEAMLINES = ['i06', 'i06-1', 'i06-2', 'i10', 'i10-1', 'i16', 'i21']
+QUANTY_PATH = 'C:\\Users\\grp66007\\Documents\\quanty\\quanty_win\\QuantyWin64.exe'
 
 regex_scan_number = re.compile(r'\d{3,}')
+
+
+# Find writable directory
+TMPDIR = tempfile.gettempdir()
+if not os.access(TMPDIR, os.W_OK):
+    TMPDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if not os.access(TMPDIR, os.W_OK):
+        TMPDIR = os.path.expanduser('~')
 
 
 # Initialise available beamlines
@@ -50,6 +60,18 @@ def get_dls_visits(instrument: str | None = None, year: str | int | None = None)
     if os.path.isdir(dls_dir):
         return {p.name: p.path for p in os.scandir(dls_dir) if p.is_dir() and p.accessible()}
     return {}
+
+
+def get_quanty_path() -> str:
+    """Return path to quanty executable, raise OSError if not available"""
+    import shutil
+    # check if Quanty is available in the system path
+    if shutil.which('Quanty'):
+        return shutil.which('Quanty')
+    # check if Quanty is available in the defult path
+    if os.path.isfile(QUANTY_PATH):
+        return QUANTY_PATH
+    raise OSError('Quanty not available')
 
 
 def list_files(folder_directory: str, extension='.nxs') -> list[str]:

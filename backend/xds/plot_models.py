@@ -5,8 +5,11 @@ https://github.com/DiamondLightSource/davidia/blob/main/client/component/src/Lin
 https://diamondlightsource.github.io/davidia/?path=/docs/plots-line--docs
 """
 import numpy as np
+from itertools import cycle
 from typing import Optional
 from pydantic import BaseModel
+
+COLORS = cycle(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
 
 
 class GlyphType:
@@ -62,12 +65,12 @@ def getGlyph(fmt: str):
     return None
 
 
-def gen_line_data(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str = '') -> lineData:
+def gen_line_data(xdata: np.ndarray, ydata: np.ndarray, fmt: str = '', label: str = '', colour: str = '') -> lineData:
     return {
         'key': label,
         'lineParams': {
-            # 'colour': fmt.strip('-x:.o;'),
-            'pointSize': 6,
+            'colour': colour if colour else next(COLORS),
+            'pointSize': 0,
             'lineOn': True, #'-' in fmt or ':' in fmt,
             # 'glyphType': getGlyph(fmt),  
         },
