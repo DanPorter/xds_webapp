@@ -52,8 +52,7 @@ export interface MeasurementInputForm {
   selectedVisit: string;
   instruments: string[];
   visits: string[];
-  rangeStart: number | null;
-  rangeEnd: number | null;
+  scanNumberRange: string;
   filePath: string;
   fileSpec: string;
   selectedNumbers: number[];
@@ -127,8 +126,7 @@ function App() {
     selectedVisit: '',
     instruments: [],
     visits: [],
-    rangeStart: null,
-    rangeEnd: null,
+    scanNumberRange: '',
     filePath: '',
     fileSpec: '',
     selectedNumbers: [],

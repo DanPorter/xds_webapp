@@ -19,8 +19,7 @@ function MeasurementInputs( measurementProps: MeasurementProps ) {
         setInputForm({
           ...inputForm, 
           fileSpec: scanFiles.file_spec,
-          rangeStart: scanFiles.first_number,
-          rangeEnd: scanFiles.last_number
+          scanNumberRange: `${scanFiles.first_number}-${scanFiles.last_number}`
         });
       }
     };

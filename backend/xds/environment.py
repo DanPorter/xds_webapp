@@ -102,19 +102,28 @@ def get_scan_files(folder_directory: str) -> dict[int, str]:
     }
 
 
+def get_scan_number(filename: str) -> int:
+    """Return scan number from filename"""
+    match = regex_scan_number.search(os.path.basename(filename))
+    if match and match[0].isnumeric():
+        return int(match[0])
+    return 0
+
+
+def replace_scan_number(filename: str, new_number: int) -> str:
+    """Replace scan number in filename"""
+    path, filename = os.path.split(filename)
+    new_filename = regex_scan_number.sub(str(new_number), filename)
+    return os.path.join(path, new_filename)
+
+
 def get_path_filespec(folder_directory: str) -> dict:
     """Return dictionary of firts, last scan numbers and path spec"""
     filepaths = list_files(folder_directory)
-
-    def scan_number(filename):
-        match = regex_scan_number.search(filename)
-        if match and match[0].isnumeric():
-            return int(match[0])
-        return 0
     
-    first_file = next((file for file in filepaths if (number := scan_number(os.path.basename(file)))), '')
-    first_number = scan_number(os.path.basename(first_file))
-    last_number = next((number for file in reversed(filepaths) if (number := scan_number(os.path.basename(file)))), 1)
+    first_file = next((file for file in filepaths if get_scan_number(file)), '')
+    first_number = get_scan_number(first_file)
+    last_number = next((number for file in reversed(filepaths) if (number := get_scan_number(file))), 1)
     file_spec = regex_scan_number.sub('{number}', os.path.basename(first_file))
     return dict(first_number=first_number, last_number=last_number, file_spec=file_spec)
 

@@ -11,7 +11,7 @@ import hdfmap
 from tabulate import tabulate
 from lmfit.models import LinearModel, QuadraticModel, ExponentialModel, StepModel
 
-from .environment import regex_scan_number
+from .environment import get_scan_number, replace_scan_number
 from .parameters import AVAILABLE_EDGES
 from .plot_models import gen_line_data, gen_plot_props
 
@@ -323,7 +323,7 @@ class XASMeasurement:
     def __init__(self, filename: str, nexus_map: hdfmap.NexusMap):
         self.filename = filename
         self.basename = os.path.basename(filename)
-        self.scan_number = int(regex_scan_number.search(self.basename)[0])
+        self.scan_number = get_scan_number(filename)
         self.map = nexus_map
 
         with hdfmap.load_hdf(filename) as hdf:
@@ -514,9 +514,43 @@ class PolarisationSet:
             (self.difference.min(), max(self.xas1.max(), self.xas2.max(), self.difference.max())),
             *self.plot()
         )
+    
+
+def load_xas_measurements(*filenames: str) -> list[XASMeasurement]:
+    """
+    Load XAS measurements from files
+    """
+    nexus_map = hdfmap.create_nexus_map(filenames[0])
+    return [XASMeasurement(filename, nexus_map) for filename in filenames]
 
 
-def find_similar_measurements(*filenames: str, energy_tol=1., temp_tol=0.1, field_tol=0.1) -> list[XASMeasurement]:
+def find_matching_scans(filename: str, match_field: str = 'scan_command', 
+                        search_scans_before: int = 10, search_scans_after: int | None = None) -> list[str]:
+    """
+    Find scans with scan numbers close to the current file with matching scan command
+
+    :param filename: nexus file to start at (must include scan number in filename)
+    :param match_field: nexus field to compare between scan files
+    :param search_scans_before: number of scans before current scan to look for
+    :param search_scans_after: number of scans after current scan to look for (None==before)
+    :returns: list of scan files that exist and have matching field values
+    """
+    nexus_map = hdfmap.create_nexus_map(filename)
+    field_value = nexus_map.eval(nexus_map.load_hdf(), match_field)
+    scanno = get_scan_number(filename)
+    if search_scans_after is None:
+        search_scans_after = search_scans_before
+    matching_files = []
+    for scn in range(scanno - search_scans_before, scanno + search_scans_after):
+        new_filename = replace_scan_number(filename, scn)
+        if os.path.isfile(new_filename):
+            new_field_value = nexus_map.eval(hdfmap.load_hdf(new_filename), match_field)
+            if field_value == new_field_value:
+                matching_files.append(new_filename)
+    return matching_files
+
+
+def find_similar_measurements(*filenames: str, energy_tol=1., temp_tol=1., field_tol=0.1) -> list[XASMeasurement]:
     """
     Find similar measurements based on energy, temperature and field.
 
@@ -532,10 +566,9 @@ def find_similar_measurements(*filenames: str, energy_tol=1., temp_tol=0.1, fiel
     :param field_tol: Tolerance for field comparison (default: 0.1 T)
     :return: List of similar measurements
     """
-    if len(filenames) < 2:
-        return []
-    nexus_map = hdfmap.create_nexus_map(filenames[0])
-    measurements = [XASMeasurement(filename, nexus_map) for filename in filenames]
+    if len(filenames) == 1:
+        filenames = find_matching_scans(filenames[0])
+    measurements = load_xas_measurements(*filenames)
     mean_energy = measurements[0].mean_energy
     temperature = measurements[0].temperature
     field_x = measurements[0].field_x
@@ -566,11 +599,14 @@ def find_similar_measurements(*filenames: str, energy_tol=1., temp_tol=0.1, fiel
     return similar
 
 
-def find_pairs(*filenames: str, background_type: str | None = None) -> PolarisationSet:
+def find_pairs(*filenames: str, background_type: str | None = None, check_similar=True) -> PolarisationSet:
     """
     returns pairs of xas measurements in paired polarisations (cl,cr or lh,lv etc)
     """
-    measurements = find_similar_measurements(*filenames)
+    if check_similar:
+        measurements = find_similar_measurements(*filenames)
+    else:
+        measurements = load_xas_measurements(*filenames)
     if len(measurements) < 2:
         raise ValueError(f"Not enough measurements! {len(measurements)}")
     
