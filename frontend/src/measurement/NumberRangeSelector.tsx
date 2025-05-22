@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { MeasurementProps } from '../App';
 import { fetchFileMetadata, fetchSimilarFiles } from './getData';
@@ -30,7 +30,9 @@ const parsePageRanges = (input: string): number[] => {
 
 
 const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => {
-  const {inputForm, setInputForm} = measurementProps
+  const maxRange = 20
+  const [rangeError, setRangeError] = useState<string>('')
+  const { inputForm, setInputForm } = measurementProps
   const { scanNumberRange, selectedNumbers, fileMetadata } = inputForm
 
   const handleRemove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, number: number) => {
@@ -63,13 +65,19 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
           scanNumberRange: `${range[0]}-${range[range.length-1]}`,
           selectedNumbers: [...new Set([...selectedNumbers, ...range])]
         })
+        setRangeError('');
+      } else {
+        setRangeError('No files found');
       }
-    } else if ( range.length > 0 && selectedNumbers.length + range.length  < 20 ) {
+    } else if ( range.length > 0 && selectedNumbers.length + range.length  < maxRange ) {
       setInputForm({
         ...inputForm,
         selectedNumbers: [...new Set([...selectedNumbers, ...range])],  // remove duplicates
       });
-    } 
+      setRangeError('');
+    } else if ( selectedNumbers.length + range.length  >= maxRange ) {
+      setRangeError('Too many scans selected');
+    }
   }
 
   const handleRangeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -103,6 +111,7 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
         <button type="button" onClick={(e) => handleRangeSelect(e)}>Select Range</button>
         <button type="button" onClick={(e) => removeAll(e)}>Remove All</button>
       </div>
+      {rangeError && <span className="error">{rangeError}</span>}
       <div className="selected-numbers">
         {selectedNumbers.map((number) => (
           <button
