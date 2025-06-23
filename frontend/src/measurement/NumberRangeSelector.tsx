@@ -5,7 +5,7 @@ import { fetchFileMetadata } from './getData';
 
 const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => {
   const {inputForm, setInputForm} = measurementProps
-  const { rangeStart, rangeEnd, selectedNumbers, fileMetadata } = inputForm
+  const { rangeStart, rangeEnd, selectedNumbers, metadataStrings: fileMetadata } = inputForm
 
   const handleRemove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, number: number) => {
     event.preventDefault(); // Prevent default form submission

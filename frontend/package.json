@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@diamondlightsource/davidia": "^1.0.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@msgpack/msgpack": "^3.1.0",
+    "@mui/material": "^7.1.0",
     "@types/cwise": "^1.0.6",
     "@types/ndarray-ops": "^1.2.7",
     "@types/path-browserify": "^1.0.3",
@@ -25,6 +28,7 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-markdown": "^10.0.0",
+    "react-rnd": "^10.5.2",
     "react-tabs": "^6.1.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",

@@ -5,7 +5,7 @@ import { decode } from 'messagepack';
 import { LinePlotProps } from '@diamondlightsource/davidia';
 
 import { scanfiles, measurement, apiMetadata } from '../api';
-import { MeasurementProps, MetaData } from '../App';
+import { MeasurementProps, MetaDataStrings } from '../App';
 
 export interface ScanFiles {
   first_number: number;
@@ -74,7 +74,7 @@ const fetchFileMetadata = async ({ inputForm, setInputForm }: MeasurementProps) 
   console.log('Fetching File Metadata', inputForm);
   const { filePath, fileSpec, selectedNumbers } = inputForm
   // don't load files already looked at
-  const newNumbers = selectedNumbers.filter((number) => !(number in inputForm.fileMetadata));
+  const newNumbers = selectedNumbers.filter((number) => !(number in inputForm.metadataStrings));
   if (newNumbers.length === 0) return;
 
   try {
@@ -90,11 +90,11 @@ const fetchFileMetadata = async ({ inputForm, setInputForm }: MeasurementProps) 
       },
       body: JSON.stringify({'files': fileObj}),
     });
-    const result = await response.json() as MetaData;
+    const result = await response.json() as MetaDataStrings;
     setInputForm({
       ...inputForm,
-      fileMetadata: {
-        ...inputForm.fileMetadata,
+      metadataStrings: {
+        ...inputForm.metadataStrings,
         ...result
       }
     })
