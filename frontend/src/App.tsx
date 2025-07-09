@@ -5,6 +5,7 @@ import 'react-tabs/style/react-tabs.css';
 import './app.css';
 
 import MeasurementPanel from './measurement/PanelComponent';
+import NewMeasurementPanel from './measurements/PanelComponent';
 import ComparisonPanel from './comparison/PanelComponent';
 import SimulationPanel from './sim/PanelComponent';
 import OpenNotebook from './jupyterRunner';
@@ -43,8 +44,8 @@ export interface BeamlineConfig {
   };
 };
 
-export interface MetaData {
-  [key: number]: string
+export interface MetaDataStrings {
+  [key: number]: string // scanno: multi-line metadata string
 }
 
 export interface MeasurementInputForm {
@@ -55,8 +56,10 @@ export interface MeasurementInputForm {
   scanNumberRange: string;
   filePath: string;
   fileSpec: string;
+  rangeStart: number | null;
+  rangeEnd: number | null;
   selectedNumbers: number[];
-  fileMetadata: MetaData;
+  metadataStrings: MetaDataStrings;
   background_type: string;
 }
 
@@ -112,6 +115,25 @@ export interface SimulationProps {
   setComparison: React.Dispatch<React.SetStateAction<ComparisonProps>>;
 }
 
+export interface Instance {
+  config: BeamlineConfig;
+  measurement: {
+    inputForm: MeasurementInputForm;
+    plots: LinePlotProps[];
+    table: string;
+  };
+  simulation: {
+    inputForm: SimulationInputForm;
+    plots: LinePlotProps[];
+    table: string;
+  }
+  comparison: {
+    experiment: LinePlotProps;
+    simulation: LinePlotProps;
+    table?: string;
+  }
+}
+
 
 function App() {
   // defaults
@@ -130,7 +152,7 @@ function App() {
     filePath: '',
     fileSpec: '',
     selectedNumbers: [],
-    fileMetadata: {},
+    metadataStrings: {},
     background_type: 'exp',
   };
   const simulationForm: SimulationInputForm = {
@@ -163,6 +185,7 @@ function App() {
   const [simulationPlots, setSimulationPlots] = useState<LinePlotProps[]>([]);
   const [simulationTable, setSimulationTable] = useState<string>('');
   const [comparison, setComparison] = useState<ComparisonProps>(comparisonData);
+  const [measurementInstance, setMeasurementInstance] = useState<Instance[]>([]);
   
   // load beamline config
   useEffect(() => {
@@ -235,11 +258,16 @@ function App() {
       <div className="banner">PolSpeX</div>
       <Tabs>
         <TabList>
+          <Tab>Measurement</Tab>
           <Tab>Experiment</Tab>
           <Tab>Simulation</Tab>
           <Tab>Compare</Tab>
           <Tab>Notebook</Tab>
         </TabList>
+
+        <TabPanel>
+          <NewMeasurementPanel /> 
+        </TabPanel>
 
         <TabPanel>
           <MeasurementPanel {... measurementProps} /> 
