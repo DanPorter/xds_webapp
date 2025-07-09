@@ -1,11 +1,39 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { MeasurementProps } from '../App';
-import { fetchFileMetadata } from './getData';
+import { fetchFileMetadata, fetchSimilarFiles } from './getData';
+
+// parse printer style input box for list of numbers
+const parsePageRanges = (input: string): number[] => {
+  const pages = new Set<number>();
+  const parts = input.split(',');
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    const match = trimmed.match(/^(\d+)(?:-(\d+)(?:x(\d+))?)?$/);
+
+    if (!match) continue;
+
+    const start = parseInt(match[1], 10);
+    const end = match[2] ? parseInt(match[2], 10) : start;
+    const step = match[3] ? parseInt(match[3], 10) : 1;
+
+    if (start <= end && step > 0) {
+      for (let i = start; i <= end; i += step) {
+        pages.add(i);
+      }
+    }
+  }
+
+  return Array.from(pages).sort((a, b) => a - b);
+  };
+
 
 const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => {
-  const {inputForm, setInputForm} = measurementProps
-  const { rangeStart, rangeEnd, selectedNumbers, fileMetadata } = inputForm
+  const maxRange = 20
+  const [rangeError, setRangeError] = useState<string>('')
+  const { inputForm, setInputForm } = measurementProps
+  const { scanNumberRange, selectedNumbers, fileMetadata } = inputForm
 
   const handleRemove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, number: number) => {
     event.preventDefault(); // Prevent default form submission
@@ -20,33 +48,48 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
     setInputForm({ ...inputForm, selectedNumbers: [] });
   };
 
-  const handleRangeStart = (event: React.ChangeEvent<HTMLInputElement> ) => {
-    const value = Number(event.target.value)
-    setInputForm({
-      ...inputForm,
-      rangeStart: value
-    })
+  const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputForm({ ...inputForm, scanNumberRange: e.target.value})
+  };
+
+  const generateScanNumbers = async () => {
+    let range = parsePageRanges(scanNumberRange)
+    if ( range.length == 1 ) {
+      console.log('single scan specified: ', range[0], ' find similar files')
+      // fetch scan number with similar metadata
+      range = await fetchSimilarFiles(range[0], inputForm.filePath, inputForm.fileSpec);
+      console.log('Similar files: ', range)
+      if ( range.length > 0 ) {
+        setInputForm({ 
+          ...inputForm, 
+          scanNumberRange: `${range[0]}-${range[range.length-1]}`,
+          selectedNumbers: [...new Set([...selectedNumbers, ...range])]
+        })
+        setRangeError('');
+      } else {
+        setRangeError('No files found');
+      }
+    } else if ( range.length > 0 && selectedNumbers.length + range.length  < maxRange ) {
+      setInputForm({
+        ...inputForm,
+        selectedNumbers: [...new Set([...selectedNumbers, ...range])],  // remove duplicates
+      });
+      setRangeError('');
+    } else if ( selectedNumbers.length + range.length  >= maxRange ) {
+      setRangeError('Too many scans selected');
+    }
   }
 
-  const handleRangeEnd = (event: React.ChangeEvent<HTMLInputElement> ) => {
-    const value = Number(event.target.value)
-    setInputForm({
-      ...inputForm,
-      rangeEnd: value
-    })
-  }
-
+  const handleRangeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent form submission
+      generateScanNumbers()
+    }
+  };
+    
   const handleRangeSelect = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
-    if (rangeStart !== null && rangeEnd !== null) {
-      const range = Array.from({ length: rangeEnd - rangeStart + 1 }, (_, i) => rangeStart + i);
-      if ( selectedNumbers.length + range.length  < 20 ) {
-        setInputForm({
-          ...inputForm,
-          selectedNumbers: [...new Set([...selectedNumbers, ...range])],  // remove duplicates
-        });
-      }  
-    }
+    generateScanNumbers()
   };
 
   useEffect(() => {
@@ -57,21 +100,18 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
   return (
     <div className="number-range-selector">
       <div className="number-inputs">
+
         <input
-          type="number"
-          placeholder="Start"
-          value={rangeStart ?? ''}
-          onChange={handleRangeStart}
-        />
-        <input
-          type="number"
-          placeholder="End"
-          value={rangeEnd ?? ''}
-          onChange={handleRangeEnd}
+          type="text"
+          placeholder='e.g., 1-5,7-15x2'
+          value={scanNumberRange}
+          onChange={handleRangeChange}
+          onKeyDown={handleRangeKeyDown}
         />
         <button type="button" onClick={(e) => handleRangeSelect(e)}>Select Range</button>
         <button type="button" onClick={(e) => removeAll(e)}>Remove All</button>
       </div>
+      {rangeError && <span className="error">{rangeError}</span>}
       <div className="selected-numbers">
         {selectedNumbers.map((number) => (
           <button

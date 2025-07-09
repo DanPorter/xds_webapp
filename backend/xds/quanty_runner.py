@@ -1291,13 +1291,15 @@ class XAS_Lua:
 
 def gen_simulation(ion: str, ch_str: str, symmetry: str, beta: float, dq: float, 
                    mag_field: tuple[float, float, float], exchange_field: tuple[float, float, float], 
-                   temperature: float, quanty_path: str | None = None) -> XAS_Lua:
+                   temperature: float, quanty_path: str | None = None, output_path: str | None = None) -> XAS_Lua:
     """
     Generate parameters for Quanty Simulation
     """
 
     if not quanty_path:
         quanty_path = get_quanty_path()
+    if not output_path:
+        output_path = TMPDIR
 
     # Check ion
     if ion not in ATOMIC_PARAMETERS or ion not in XRAY_DATA['elements']:
@@ -1347,8 +1349,32 @@ def gen_simulation(ion: str, ch_str: str, symmetry: str, beta: float, dq: float,
         symm=symmetry,
         charge=ch_str,
         params=calculation_parameters,
-        output_path=TMPDIR,
+        output_path=output_path,
         quanty_path=quanty_path,
         beta=beta_parameters
     )
     return simulation
+
+
+def multi_simulation(ion: str, ch_str: list[str], symmetry: list[str], beta: list[float], dq: list[float], 
+                     mag_field: tuple[float, float, float], exchange_field: list[tuple[float, float, float]], 
+                     temperature: float, quanty_path: str | None = None) -> list[XAS_Lua]:
+    """
+    Generate parameters for Quanty Simulation
+    """
+
+    sims = [
+        gen_simulation(
+            ion=ion,
+            ch_str=ch,
+            symmetry=sym,
+            beta=b,
+            dq=d,
+            mag_field=mag_field,
+            exchange_field=ex,
+            temperature=temperature,
+            quanty_path=quanty_path
+        )
+        for ch, sym, b, d, ex in zip(ch_str, symmetry, beta, dq, exchange_field)
+    ]
+    return sims

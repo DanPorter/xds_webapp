@@ -4,7 +4,7 @@ import { join } from 'path-browserify';
 import { decode } from 'messagepack';
 import { LinePlotProps } from '@diamondlightsource/davidia';
 
-import { scanfiles, measurement, apiMetadata } from '../api';
+import { apiScanFiles, apiSimilarScans, measurement, apiMetadata } from '../api';
 import { MeasurementProps, MetaData } from '../App';
 
 export interface ScanFiles {
@@ -16,15 +16,14 @@ export interface ScanFiles {
 /**
  * Fetches scan files from the specified visit path.
  *
- * @param {Object} params - The parameters for fetching scan files.
- * @param {string} params.visitPath - The path of the visit to fetch scan files from.
+ * @param {string} visitPath - The path of the visit to fetch scan files from.
  * @returns {Promise<ScanFiles>} A promise that resolves to the scan files data.
  * @throws Will throw an error if the fetch operation fails.
  */
 const fetchScanFiles = async ( visitPath: string ): Promise<ScanFiles> => {
   try {
     console.log('Fetching scan files from ', visitPath)
-    const response = await fetch(scanfiles, {
+    const response = await fetch(apiScanFiles, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -33,6 +32,38 @@ const fetchScanFiles = async ( visitPath: string ): Promise<ScanFiles> => {
     });
     const result = await response.json() as ScanFiles;
     return result;
+  } catch (error) {
+    console.error('Error fetching scan files:', error);
+    throw error;
+  }
+};
+
+interface SimilarFiles {
+  files: string[];
+  scan_numbers: number[];
+}
+
+/**
+ * Fetches scan files in same directory with similar properties
+ *
+ * @param {string} filePath - The path of the visit to fetch scan files from.
+ * @returns {Promise<string[]>} A promise that resolves to the scan files data.
+ * @throws Will throw an error if the fetch operation fails.
+ */
+const fetchSimilarFiles = async ( scanNumber: number, filePath: string, fileSpec: string ): Promise<number[]> => {
+  try {
+    const files = generateFileList([scanNumber], filePath, fileSpec);
+    console.log('Fetching similar scan files to ', files)
+    const response = await fetch(apiSimilarScans, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({'path': files[0]}),
+    });
+    const result = await response.json() as SimilarFiles;
+    console.log('similar scans result', result)
+    return result.scan_numbers;
   } catch (error) {
     console.error('Error fetching scan files:', error);
     throw error;
@@ -169,4 +200,4 @@ const fetchMeasurement = async (
   }
 };
 
-export { fetchScanFiles, fetchFileMetadata, fetchMeasurement };
+export { fetchScanFiles, fetchSimilarFiles, fetchFileMetadata, fetchMeasurement };
