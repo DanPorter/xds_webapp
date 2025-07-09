@@ -19,7 +19,7 @@ import requests
 from xds import gen_simulation
 from xds.environment import AVAILABLE_EXPIDS, get_path_filespec, get_beamline, get_quanty_path
 from xds.parameters import AVAILABLE_SYMMETRIES, AVAILABLE_DQ
-from xds.xas_analysis import find_pairs, gen_metadata_str
+from xds.xas_analysis import find_pairs, gen_metadata_str, find_similar_measurements
 from xds.plot_models import lineProps
 
 
@@ -78,6 +78,11 @@ class SimulationInputs(BaseModel):
     temperature: float
     path: str
 
+
+class Simulations(BaseModel):
+    sims: list[SimulationInputs]
+
+
 class SimulationOutputs(BaseModel):
     message: str
     table: str
@@ -123,10 +128,14 @@ async def get_element():
 
 @app.get("/api/config")
 async def get_element():
+    try:
+        quanty_path = get_quanty_path()
+    except OSError:
+        quanty_path = 'QUANTY NOT AVAILABLE'
     return {
         'beamline': get_beamline(),
         'visits': AVAILABLE_EXPIDS,
-        'quanty_path': get_quanty_path(),
+        'quanty_path': quanty_path,
         'available_dq_values': AVAILABLE_DQ,
     }
 
@@ -143,6 +152,18 @@ async def scan_files(data: DataPath):
     filespec = get_path_filespec(data.path)
     logger.info(f"files in {data.path}: {filespec}")
     return filespec
+
+
+@app.post("/api/similar_scans")
+async def scan_files(data: DataPath):
+    if not os.path.isfile(data.path):
+        logger.info('File does not exist:', data.path)
+        return {}
+    measurements = find_similar_measurements(data.path)
+    files = [m.filename for m in measurements]
+    scan_numbers = [m.scan_number for m in measurements]
+    logger.info(f"similar files to {data.path}: {files}")
+    return {'files': files, 'scan_numbers': scan_numbers}
 
 
 def encoder(obj) -> dict[str, Any]:
@@ -192,6 +213,45 @@ async def simulation(data: SimulationInputs):
             "plot2": {},
         }
     packed_data = msgpack.packb(data, use_bin_type=True, default=encoder)
+    return Response(content=packed_data, media_type="application/x-msgpack")
+
+
+@app.post("/api/simulations", response_model=SimulationOutputs)
+async def simulation(simulations: Simulations):
+    # Run Quanty
+    logger.info('Now I run Quanty with the following parameters:\n', simulations)
+    try:
+        simulation = gen_simulation(
+            ion=simulations.ion,
+            ch_str=simulations.charge,
+            symmetry=simulations.symmetry,
+            beta=simulations.beta,
+            dq=simulations.tenDq['10Dq_i'] if '10Dq_i' in simulations.tenDq else 0.0,
+            mag_field=[simulations.bFieldX, simulations.bFieldY, simulations.bFieldZ],
+            exchange_field=[simulations.hFieldX, simulations.hFieldY, simulations.hFieldZ],
+            temperature=simulations.temperature,
+            quanty_path=simulations.path,
+        )
+        logger.info(f"Running Quanty simulation: {simulation.label}")
+        result = simulation.run_all()
+        logger.debug(f"Simulation output: {result.stdout if result else 'None'}")
+        logger.info(f"Analysing results of simulation: {simulation.label}")
+        table, axis1, axis2 = simulation.analyse()
+        simulations = {
+            "message": f"simulation {simulation.label} succsefull", 
+            "table": table, 
+            "plot1": axis1, 
+            "plot2": axis2
+        }
+    except Exception as e:
+        logger.error(f"Error running simulation: {e}")
+        simulations = {
+            "message": f"Error running simulation: {e}",
+            "table": f"Error running simulation: {e}",
+            "plot1": {}, 
+            "plot2": {},
+        }
+    packed_data = msgpack.packb(simulations, use_bin_type=True, default=encoder)
     return Response(content=packed_data, media_type="application/x-msgpack")
 
 
@@ -265,9 +325,9 @@ async def metadata(indata: LoadMetadata):
 
 
 INDEX = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist'))
-logger.info(f'!!! Frontend: {INDEX}, isfile: {os.path.isfile(INDEX)}')
+print(INDEX)
+logger.info(f'!!! Frontend: {INDEX}, is: {os.path.isdir(INDEX)}')
 app.mount('/', StaticFiles(directory=INDEX, html=True), 'frontend')
-
 
 if __name__ == "__main__":
     import uvicorn
