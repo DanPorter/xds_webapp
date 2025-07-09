@@ -63,7 +63,7 @@ def get_dls_visits(instrument: str | None = None, year: str | int | None = None)
 
 
 def get_quanty_path() -> str:
-    """Return path to quanty executable"""
+    """Return path to quanty executable, raise OSError if not available"""
     import shutil
     # check if Quanty is available in the system path
     if shutil.which('Quanty'):
@@ -71,7 +71,7 @@ def get_quanty_path() -> str:
     # check if Quanty is available in the defult path
     if os.path.isfile(QUANTY_PATH):
         return QUANTY_PATH
-    return ''
+    raise OSError('Quanty not available')
 
 
 def list_files(folder_directory: str, extension='.nxs') -> list[str]:

@@ -39,6 +39,7 @@ const fetchScanFiles = async ( visitPath: string ): Promise<ScanFiles> => {
   }
 };
 
+
 /**
  * Generates a list of file paths based on the selected numbers and file specifications.
  *

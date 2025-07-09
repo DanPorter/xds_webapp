@@ -10,10 +10,8 @@ from .quanty_analysis import process_results
 from .plot_models import lineProps
 from .environment import get_quanty_path, TMPDIR
 
-DEFAULT_QUANTY_PATH = get_quanty_path()
 
-
-def run(input_filename: str, quanty_path: str = DEFAULT_QUANTY_PATH):
+def run(input_filename: str, quanty_path: str | None = None):
     """
     Runs Quanty with the input file specified by Label.lua, and
     returns the standard output and error (if any)
@@ -27,6 +25,8 @@ def run(input_filename: str, quanty_path: str = DEFAULT_QUANTY_PATH):
                     result.stdout  is the standard output
                     result.stderr  is the standard error
     """
+    if not quanty_path:
+        quanty_path = get_quanty_path()
     command = [quanty_path, input_filename]
     result = subprocess.run(command, capture_output=True, text=True)
     return result
@@ -1297,7 +1297,7 @@ def gen_simulation(ion: str, ch_str: str, symmetry: str, beta: float, dq: float,
     """
 
     if not quanty_path:
-        quanty_path = DEFAULT_QUANTY_PATH
+        quanty_path = get_quanty_path()
 
     # Check ion
     if ion not in ATOMIC_PARAMETERS or ion not in XRAY_DATA['elements']:

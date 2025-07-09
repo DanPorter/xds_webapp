@@ -16,7 +16,7 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
   };
 
   const removeAll = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    event.preventDefault;
+    event.preventDefault();
     setInputForm({ ...inputForm, selectedNumbers: [] });
   };
 
@@ -37,7 +37,7 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
   }
 
   const handleRangeSelect = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    event.preventDefault;
+    event.preventDefault();
     if (rangeStart !== null && rangeEnd !== null) {
       const range = Array.from({ length: rangeEnd - rangeStart + 1 }, (_, i) => rangeStart + i);
       if ( selectedNumbers.length + range.length  < 20 ) {

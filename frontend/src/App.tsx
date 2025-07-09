@@ -9,7 +9,7 @@ import ComparisonPanel from './comparison/PanelComponent';
 import SimulationPanel from './sim/PanelComponent';
 import OpenNotebook from './jupyterRunner';
 
-import { config } from "./api";
+import { apiConfig } from "./api";
 import { LinePlotProps } from '@diamondlightsource/davidia';
 
 export interface BeamlineConfig {
@@ -168,12 +168,32 @@ function App() {
   
   // load beamline config
   useEffect(() => {
-    console.log('fetching config from ', config)
+    console.log('fetching config from ', apiConfig)
     const fetchData = async () => {
       try {
-        const response = await fetch(config);
+        const response = await fetch(apiConfig);
         const result = await response.json();
         setBackendData({...backendData, ...result});
+
+        if (Object.keys(result.visits).length > 0) {
+          setMeasurementInput({
+            ...measurementInput, 
+            instruments: Object.keys(result.visits) 
+          });
+        }
+        if (result.beamline && result.beamline in result.visits) {
+          console.log('setting beamline to ', result.beamline);
+          const beamline = result.beamline
+          const visits = Object.keys(result.visits[result.beamline])
+          const visit = visits[0]
+          setMeasurementInput({
+            ...measurementInput,
+            selectedInstrument: beamline,
+            visits: visits,
+            selectedVisit: visit,
+            filePath: result.visits[result.beamline][visit],
+          });
+        }
         setSimulationInput((prev) => ({
           ...prev,
           path: result.quanty_path,

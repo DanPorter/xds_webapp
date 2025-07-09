@@ -6,67 +6,54 @@ import { ScanFiles, fetchScanFiles, fetchMeasurement } from './getData';
 import NumberRangeSelector from './NumberRangeSelector';
 
 
-function MeasurementInputs( props: MeasurementProps ) {
-  const { inputForm, setInputForm, config } = props;
+function MeasurementInputs( measurementProps: MeasurementProps ) {
+  const { inputForm, setInputForm, config } = measurementProps;
   const { filePath, selectedInstrument, instruments, selectedVisit, visits } = inputForm;
-
-  // load local beamline file parameters
-  if (Object.keys(config.visits).length > 0) {
-    console.log('beamlines: ', Object.keys(config.visits))
-    setInputForm({...inputForm, instruments: Object.keys(config.visits) });
-  }
-  if (config.beamline && config.beamline in config.visits) {
-    console.log('setting beamline to ', config.beamline);
-    setInputForm({
-      ...inputForm,
-      selectedInstrument: config.beamline,
-      visits: Object.keys(config.visits[config.beamline]),
-      selectedVisit: Object.keys(config.visits[config.beamline])[0],
-      filePath: config.visits[config.beamline][Object.keys(config.visits[config.beamline])[0]],
-    });
-  }
 
   // load files from visit path on visitPath change
   useEffect(() => {
-    const fetchData = async () => {
+    const getScanFiles = async () => {
       if (!filePath) return;
-      console.log('fetching scan files from ', filePath)
-      const result: ScanFiles = await fetchScanFiles(filePath);
-      console.log('result: ', result)
-      if (result.first_number) {
+      const scanFiles: ScanFiles = await fetchScanFiles(filePath);
+      if (scanFiles.first_number) {
         setInputForm({
           ...inputForm, 
-          fileSpec: result.file_spec,
-          rangeStart: result.first_number,
-          rangeEnd: result.last_number
+          fileSpec: scanFiles.file_spec,
+          rangeStart: scanFiles.first_number,
+          rangeEnd: scanFiles.last_number
         });
       }
     };
-    fetchData()
+    getScanFiles()
       .catch(console.error);
   }, [filePath]);
 
   // dropdown onChange handlers
   const handleInstrumentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    // load files
     const instrument = event.target.value;
     setInputForm({...inputForm, selectedInstrument: instrument });
-    const visits = config.visits;
-    if (visits && instrument in visits) {
+    const beamlineVisits = config.visits;
+    console.log('Instrument: ', instrument, 'visits', beamlineVisits, instrument in beamlineVisits)
+    console.log('inputForm', inputForm, inputForm.selectedInstrument)
+    if (beamlineVisits && instrument in beamlineVisits) {
+      console.log('visits:', Object.keys(beamlineVisits[instrument]))
       setInputForm({
         ...inputForm,
-        visits: Object.keys(visits[instrument]),
+        selectedInstrument: instrument,
+        visits: Object.keys(beamlineVisits[instrument]),
         selectedVisit: ''
       });
     };
   };
 
   const handleVisitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const visit = event.target.value;
-    const visits = config.visits;
+    const selectedVisit = event.target.value;
+    const beamlineVisits = config.visits;
     setInputForm({
       ...inputForm,
-      selectedVisit: visit,
-      filePath: visit ? visits[selectedInstrument][visit] : ''
+      selectedVisit: selectedVisit,
+      filePath: selectedVisit ? beamlineVisits[selectedInstrument][selectedVisit] : '',
     });
   };
 
@@ -79,7 +66,7 @@ function MeasurementInputs( props: MeasurementProps ) {
     setInputForm({ ...inputForm, background_type: value });
   }
   return (
-    <form className="form-container" onSubmit={(e) => fetchMeasurement(e, props)}>
+    <form className="form-container" onSubmit={(e) => fetchMeasurement(e, measurementProps)}>
       <h2>Experiment Data</h2>
       {/* ---Instrument Selection--- */}
       { instruments.length > 0 &&  // only display if on /dls file system
@@ -134,7 +121,7 @@ function MeasurementInputs( props: MeasurementProps ) {
       </div>
       {/* ---NumberRangeSelectror.tsx--- */}
       <div className="form-group">
-        <NumberRangeSelector {... props } />
+        <NumberRangeSelector {... measurementProps } />
       </div>
       {/* ---Background--- */}
       <div className="form-group">
