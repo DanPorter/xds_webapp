@@ -325,9 +325,9 @@ async def metadata(indata: LoadMetadata):
 
 
 INDEX = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist'))
-logger.info(f'!!! Frontend: {INDEX}, isfile: {os.path.isfile(INDEX)}')
+print(INDEX)
+logger.info(f'!!! Frontend: {INDEX}, is: {os.path.isdir(INDEX)}')
 app.mount('/', StaticFiles(directory=INDEX, html=True), 'frontend')
-
 
 if __name__ == "__main__":
     import uvicorn
