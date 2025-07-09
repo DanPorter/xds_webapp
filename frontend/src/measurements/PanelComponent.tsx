@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, Button, Grid, Container } from '@mui/material';
 import HoverWindow from './HoverWindow';
-import { Instance } from '../App';
+// import { Instance } from '../App';
 
 interface CardData {
   id: number;
@@ -10,14 +10,15 @@ interface CardData {
   description: string;
 }
 
-interface PanelProps {
-  measurementInstance: Instance;
-  setMeasurementInstance: React.Dispatch<React.SetStateAction<Instance>>;
-}
+// interface PanelProps {
+//   measurementInstance: Instance;
+//   setMeasurementInstance: React.Dispatch<React.SetStateAction<Instance>>;
+// }
 
 
 export default
-function NewMeasurementPanel({measurementInstance, setMeasurementInstance}: PanelProps) {
+// function NewMeasurementPanel({measurementInstance, setMeasurementInstance}: PanelProps) {
+function NewMeasurementPanel() {
   const [cards, setCards] = React.useState<CardData[]>([]);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [activeCardId, setActiveCardId] = React.useState<number | null>(null);

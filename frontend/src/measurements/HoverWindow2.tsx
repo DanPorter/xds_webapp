@@ -1,8 +1,9 @@
 import React from 'react';
-import { useState } from 'react';
-import { Modal, Box, TextField, Button } from '@mui/material';
-import { LinePlotProps } from '@diamondlightsource/davidia';
-import { MetaDataStrings, BeamlineConfig } from '../App';
+import { Box, TextField, Button } from '@mui/material';
+// import { useState } from 'react';
+// import { Modal, Box, TextField, Button } from '@mui/material';
+// import { LinePlotProps } from '@diamondlightsource/davidia';
+// import { MetaDataStrings, BeamlineConfig } from '../App';
 
 
 interface HoverWindowProps {
@@ -33,7 +34,7 @@ const MovableWindow = () => {
 };
 
 
-const HoverWindow: React.FC<HoverWindowProps> = ({ open, onClose, onSubmit }) => {
+const HoverWindow: React.FC<HoverWindowProps> = ({ onClose, onSubmit }) => {
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
 
@@ -85,3 +86,4 @@ const HoverWindow: React.FC<HoverWindowProps> = ({ open, onClose, onSubmit }) =>
 };
 
 export default HoverWindow;
+export { MovableWindow }

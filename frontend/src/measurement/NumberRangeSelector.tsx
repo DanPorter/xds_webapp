@@ -33,7 +33,7 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
   const maxRange = 20
   const [rangeError, setRangeError] = useState<string>('')
   const { inputForm, setInputForm } = measurementProps
-  const { scanNumberRange, selectedNumbers, fileMetadata } = inputForm
+  const { scanNumberRange, selectedNumbers, metadataStrings } = inputForm
 
   const handleRemove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, number: number) => {
     event.preventDefault(); // Prevent default form submission
@@ -117,7 +117,7 @@ const NumberRangeSelector: React.FC<MeasurementProps> = ( measurementProps ) => 
           <button
             key={number}
             type="button"
-            title={fileMetadata[number]}
+            title={metadataStrings[number]}
             className="selected-number-button"
             onClick={(e) => handleRemove(e, number)}
           >

@@ -56,8 +56,6 @@ export interface MeasurementInputForm {
   scanNumberRange: string;
   filePath: string;
   fileSpec: string;
-  rangeStart: number | null;
-  rangeEnd: number | null;
   selectedNumbers: number[];
   metadataStrings: MetaDataStrings;
   background_type: string;
@@ -185,7 +183,6 @@ function App() {
   const [simulationPlots, setSimulationPlots] = useState<LinePlotProps[]>([]);
   const [simulationTable, setSimulationTable] = useState<string>('');
   const [comparison, setComparison] = useState<ComparisonProps>(comparisonData);
-  const [measurementInstance, setMeasurementInstance] = useState<Instance[]>([]);
   
   // load beamline config
   useEffect(() => {
